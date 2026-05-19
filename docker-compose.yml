@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16
+    container_name: odoo18-cost-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - odoo18-cost-db-data:/var/lib/postgresql/data
+
+  odoo:
+    image: odoo:18.0
+    container_name: odoo18-cost-web
+    restart: unless-stopped
+    depends_on: [db]
+    ports:
+      - "8018:8069"
+    volumes:
+      - ./addons:/mnt/extra-addons
+      - ./config:/etc/odoo
+      - odoo18-cost-web-data:/var/lib/odoo
+    environment:
+      - HOST=db
+      - USER=${POSTGRES_USER}
+      - PASSWORD=${POSTGRES_PASSWORD}
+
+volumes:
+  odoo18-cost-db-data:
+  odoo18-cost-web-data:

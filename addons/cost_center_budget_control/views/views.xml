@@ -1,0 +1,60 @@
+<odoo>
+  <data>
+    <!-- explicit list view definition -->
+<!--
+    <record model="ir.ui.view" id="cost_center_budget_control.list">
+      <field name="name">cost_center_budget_control list</field>
+      <field name="model">cost_center_budget_control.cost_center_budget_control</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+          <field name="value"/>
+          <field name="value2"/>
+        </list>
+      </field>
+    </record>
+-->
+
+    <!-- actions opening views on models -->
+<!--
+    <record model="ir.actions.act_window" id="cost_center_budget_control.action_window">
+      <field name="name">cost_center_budget_control window</field>
+      <field name="res_model">cost_center_budget_control.cost_center_budget_control</field>
+      <field name="view_mode">list,form</field>
+    </record>
+-->
+
+    <!-- server action to the one above -->
+<!--
+    <record model="ir.actions.server" id="cost_center_budget_control.action_server">
+      <field name="name">cost_center_budget_control server</field>
+      <field name="model_id" ref="model_cost_center_budget_control_cost_center_budget_control"/>
+      <field name="state">code</field>
+      <field name="code">
+        action = {
+          "type": "ir.actions.act_window",
+          "view_mode": "list,form",
+          "res_model": model._name,
+        }
+      </field>
+    </record>
+-->
+
+    <!-- Top menu item -->
+<!--
+    <menuitem name="cost_center_budget_control" id="cost_center_budget_control.menu_root"/>
+-->
+    <!-- menu categories -->
+<!--
+    <menuitem name="Menu 1" id="cost_center_budget_control.menu_1" parent="cost_center_budget_control.menu_root"/>
+    <menuitem name="Menu 2" id="cost_center_budget_control.menu_2" parent="cost_center_budget_control.menu_root"/>
+-->
+    <!-- actions -->
+<!--
+    <menuitem name="List" id="cost_center_budget_control.menu_1_list" parent="cost_center_budget_control.menu_1"
+              action="cost_center_budget_control.action_window"/>
+    <menuitem name="Server to list" id="cost_center_budget_control" parent="cost_center_budget_control.menu_2"
+              action="cost_center_budget_control.action_server"/>
+-->
+  </data>
+</odoo>
