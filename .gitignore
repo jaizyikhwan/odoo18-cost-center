@@ -1,0 +1,16 @@
+# AI local workflow files
+AI_CONTEXT.md
+AI_RULES.md
+
+# Docs for AI workflow, not intended for public consumption
+docs/
+
+# optional temporary AI files
+.ai-temp/
+.ai-cache/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.DS_Store
