@@ -106,33 +106,119 @@ class BudgetPlan(models.Model):
                         _("An overlapping budget already exists for this Cost Center during the specified period.")
                     )
 
-    def write(self, vals):
-        # Allow mail_thread/activity_mixin related fields to be updated in any state
-        mail_fields = ['message_follower_ids', 'activity_ids', 'message_ids', 'activity_state'] # add other mail fields if needed
-        if not any(field in vals for field in mail_fields):
-            # If no mail fields are updated, apply state-based protection
-            for rec in self:
-                if rec.state in ("approved", "closed", "cancelled") and not self.env.su:
-                    raise UserError(_("Cannot modify a budget that is in Approved, Closed or Cancelled state."))
-                if rec.state == "submitted" and not self.env.user.has_group("cost_center_budget_control.group_budget_manager") and not self.env.su:
-                    # Allow Budget Manager to edit submitted budgets (e.g., to reset_to_draft or approve)
-                    # Otherwise, block regular users
-                    raise UserError(_("Only Budget Managers can modify a submitted budget."))
-        
-        # Remove state from vals if it's being set directly to a protected state outside allowed transitions
-        if "state" in vals and vals["state"] in ("approved", "closed", "cancelled") and not self.env.su:
-            if self.state not in ("submitted") or vals["state"] != "approved": # Allow draft->submitted, submitted->approved, active->closed/cancelled
-                if self.state not in ("approved") or vals["state"] != "closed":
-                    if self.state not in ("approved") or vals["state"] != "cancelled":
-                        pass # allow it
-                    else:
-                        raise UserError(_("Invalid state transition."))
-                else:
-                    pass # allow it
-            else:
-                pass # allow it
+    # -------------------------------------------------------------------------
+    # PROTECTION HELPERS
+    # -------------------------------------------------------------------------
 
-        return super().write(vals)
+    PROTECTED_STATES = ("approved", "closed", "cancelled")
+    SUBMITTED_RESTRICTED = ("submitted",)
+
+    @staticmethod
+    def _is_mail_write(vals):
+        """Check if write only contains mail-related fields."""
+        mail_fields = {
+            "message_follower_ids",
+            "activity_ids",
+            "message_ids",
+            "activity_state",
+            "message_is_follower",
+            "message_partner_ids",
+            "message_channel_ids",
+            "message_ids",
+            "activity_ids",
+            "activity_type_id",
+            "activity_summary",
+            "activity_note",
+            "activity_date_deadline",
+            "activity_user_id",
+            "activity_state",
+        }
+        return all(field in mail_fields for field in vals)
+
+    def _check_state_protection(self, vals):
+        """Validate state-based write protection.
+
+        Rules:
+        - Mail-only writes are always allowed
+        - Business field writes blocked in protected states
+        - Submitted state restricted to Budget Managers
+        """
+        if self.env.su:
+            return
+
+        if self._is_mail_write(vals):
+            return
+
+        for rec in self:
+            if rec.state in self.PROTECTED_STATES:
+                raise UserError(
+                    _("Cannot modify a budget that is in %s state.") % rec.state
+                )
+            if rec.state in self.SUBMITTED_RESTRICTED:
+                if not self.env.user.has_group(
+                    "cost_center_budget_control.group_budget_manager"
+                ):
+                    raise UserError(
+                        _("Only Budget Managers can modify a submitted budget.")
+                    )
+
+    def _filter_protected_fields(self, vals):
+        """Remove business fields from vals if state is protected.
+
+        Returns filtered vals containing only allowed fields.
+        """
+        if self.env.su:
+            return vals
+
+        if self._is_mail_write(vals):
+            return vals
+
+        protected_fields = {
+            "name",
+            "cost_center_id",
+            "date_from",
+            "date_to",
+            "line_ids",
+            "approved_by",
+            "approved_date",
+        }
+
+        for rec in self:
+            if rec.state in self.PROTECTED_STATES:
+                for field in protected_fields:
+                    vals.pop(field, None)
+            elif rec.state in self.SUBMITTED_RESTRICTED:
+                if not self.env.user.has_group(
+                    "cost_center_budget_control.group_budget_manager"
+                ):
+                    for field in protected_fields:
+                        vals.pop(field, None)
+
+        return vals
+
+    # -------------------------------------------------------------------------
+    # ORM OVERRIDES
+    # -------------------------------------------------------------------------
+
+    def write(self, vals):
+        """Enforce state protection before write.
+
+        Protection flow:
+        1. Always validate state protection first
+        2. Filter out business fields if state is protected
+        3. Allow mail-only writes in any state
+        4. Proceed with super().write() only if vals is non-empty
+        """
+        # Step 1: Always check state protection
+        self._check_state_protection(vals)
+
+        # Step 2: Filter protected business fields
+        vals = self._filter_protected_fields(vals)
+
+        # Step 3: Only call super if there are remaining fields to write
+        if vals:
+            return super().write(vals)
+        return True
 
     def unlink(self):
         for rec in self:
@@ -344,12 +430,22 @@ class BudgetPlanLine(models.Model):
             else:
                 rec.usage_percent = 0.0
 
-    # -------------------------------------------------------------------------
-    # ONCHANGE METHODS
-    # -------------------------------------------------------------------------
+    def write(self, vals):
+        # Always check protection for line writes
+        if self.env.context.get('bypass_protection'):
+            return super().write(vals)
 
-    @api.onchange("account_id")
-    def _onchange_account_id(self):
-        if self.account_id and not self.name:
-            self.name = self.account_id.name
+        for rec in self:
+            if rec.plan_id.state in ("approved", "closed", "cancelled") and not self.env.su:
+                raise UserError(_("Cannot modify a budget line that is in Approved, Closed or Cancelled state."))
+        return super().write(vals)
+
+    def unlink(self):
+        if self.env.context.get('bypass_protection'):
+            return super().unlink()
+
+        for rec in self:
+            if rec.plan_id.state in ("submitted", "approved", "closed", "cancelled") and not self.env.su:
+                raise UserError(_("Cannot delete a budget line that is not in Draft state."))
+        return super().unlink()
 
