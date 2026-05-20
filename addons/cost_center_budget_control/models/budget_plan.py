@@ -207,6 +207,7 @@ class BudgetPlanLine(models.Model):
         "account.account", 
         string="Account", 
         required=True,
+        index=True,
         check_company=True,
         domain=[("account_type", "in", (
             "expense", "expense_depreciation", "expense_direct_cost"
@@ -271,30 +272,62 @@ class BudgetPlanLine(models.Model):
         "account_id",
     )
     def _compute_actual_amount(self):
+        # Batch aggregation to eliminate N+1 bottleneck
+        # We group by the composite key: analytic_account_id, account_id, and date range
+        # Note: company_id is implicitly handled by analytic_account_id and account_id
+        
+        plans = self.mapped("plan_id")
+        if not plans:
+            self.actual_amount = 0.0
+            return
+
+        # Prepare a map to store results: (analytic_id, account_id, date_from, date_to) -> balance
+        # This composite key ensures no leakage between different budget periods or cost centers
+        data_map = {}
+
+        # Group lines by their unique aggregation context
+        # We process each unique plan's criteria once
+        unique_contexts = set()
+        for rec in self:
+            if rec.plan_id and rec.account_id:
+                analytic_id = rec.plan_id.cost_center_id.analytic_account_id.id
+                if analytic_id:
+                    unique_contexts.add((
+                        analytic_id,
+                        rec.plan_id.date_from,
+                        rec.plan_id.date_to
+                    ))
+
+        for analytic_id, date_from, date_to in unique_contexts:
+            domain = [
+                ("analytic_account_id", "=", analytic_id),
+                ("parent_state", "=", "posted"),
+                ("date", ">=", date_from),
+                ("date", "<=", date_to),
+            ]
+            # Use _read_group for Odoo 18 canonical batch aggregation
+            groups = self.env["account.move.line"]._read_group(
+                domain, 
+                ['account_id'], 
+                ['balance:sum']
+            )
+            for account, balance_sum in groups:
+                data_map[(analytic_id, account.id, date_from, date_to)] = balance_sum
+
         for rec in self:
             if not rec.plan_id or not rec.account_id:
                 rec.actual_amount = 0.0
                 continue
 
-            analytic_account = rec.plan_id.cost_center_id.analytic_account_id
-            if not analytic_account:
-                rec.actual_amount = 0.0
-                continue
-
-            domain = [
-                ("account_id", "=", rec.account_id.id),
-                ("analytic_account_id", "=", analytic_account.id),
-                ("parent_state", "=", "posted"),
-                ("date", ">=", rec.plan_id.date_from),
-                ("date", "<=", rec.plan_id.date_to),
-            ]
-            result = self.env["account.move.line"].read_group(
-                domain, ["balance:sum"], []
-            )
-            rec.actual_amount = abs(result[0]["balance"]) if result else 0.0
+            analytic_id = rec.plan_id.cost_center_id.analytic_account_id.id
+            key = (analytic_id, rec.account_id.id, rec.plan_id.date_from, rec.plan_id.date_to)
+            # Use raw balance behavior (debit - credit) naturally provided by Odoo
+            rec.actual_amount = data_map.get(key, 0.0)
 
     @api.depends("planned_amount", "actual_amount")
     def _compute_variance_amount(self):
+        # Variance = Planned - Actual
+        # Positive variance means under budget, negative means over budget
         for rec in self:
             rec.variance_amount = rec.planned_amount - rec.actual_amount
 

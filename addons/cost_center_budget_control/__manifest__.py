@@ -19,6 +19,7 @@ Enterprise-grade Cost Center management for Odoo 18 Community Edition.
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
+        "security/ir_rule.xml",
         "views/cost_center_views.xml",
         "views/budget_plan_views.xml",
         "views/menu_items.xml",
