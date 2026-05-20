@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_cost_center_budget" model="ir.module.category">
+        <field name="name">Cost Center &amp; Budget Control</field>
+        <field name="sequence" eval="200"/>
+    </record>
+
+    <record id="group_budget_user" model="res.groups">
+        <field name="name">Budget User</field>
+        <field name="category_id" ref="module_category_cost_center_budget"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_budget_manager" model="res.groups">
+        <field name="name">Budget Manager</field>
+        <field name="category_id" ref="module_category_cost_center_budget"/>
+        <field name="implied_ids" eval="[(4, ref('group_budget_user'))]"/>
+    </record>
+</odoo>
