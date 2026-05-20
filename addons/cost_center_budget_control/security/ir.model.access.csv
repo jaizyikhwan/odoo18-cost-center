@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cost_center_budget_control_cost_center_budget_control,cost_center_budget_control.cost_center_budget_control,model_cost_center_budget_control_cost_center_budget_control,base.group_user,1,1,1,1
+access_cost_center_user,cost.center.user,model_cost_center,group_budget_user,1,1,1,0
+access_cost_center_mgr,cost.center.mgr,model_cost_center,group_budget_manager,1,1,1,1
