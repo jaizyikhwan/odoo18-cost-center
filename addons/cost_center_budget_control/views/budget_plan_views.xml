@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Budget Plan Form View -->
+    <record id="view_budget_plan_form" model="ir.ui.view">
+        <field name="name">budget.plan.form</field>
+        <field name="model">budget.plan</field>
+        <field name="arch" type="xml">
+            <form string="Budget Plan">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary" invisible="state != 'submitted'"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" invisible="state not in ('submitted', 'approved')"/>
+                    <button name="action_close" string="Close" type="object" invisible="state in ('draft', 'closed', 'cancelled')"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state in ('closed', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="e.g. Q1 2026 Budget"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="cost_center_id" readonly="state in ('approved', 'closed', 'cancelled')"/>
+                            <field name="date_from" readonly="state in ('approved', 'closed', 'cancelled')"/>
+                            <field name="date_to" readonly="state in ('approved', 'closed', 'cancelled')"/>
+                        </group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="is_currently_active"/>
+                            <field name="approved_by"/>
+                            <field name="approved_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Budget Lines" name="lines">
+                            <field name="line_ids" readonly="state in ('approved', 'closed', 'cancelled')">
+                                <list editable="bottom">
+                                    <field name="account_id"/>
+                                    <field name="name"/>
+                                    <field name="planned_amount" sum="Total Planned"/>
+                                    <field name="actual_amount" sum="Total Actual"/>
+                                    <field name="variance_amount" sum="Total Variance"/>
+                                    <field name="remaining_amount" sum="Total Remaining"/>
+                                    <field name="usage_percent" widget="progressbar" options="{'current_value': 'usage_percent', 'max_value': 100}"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Budget Plan List View -->
+    <record id="view_budget_plan_list" model="ir.ui.view">
+        <field name="name">budget.plan.list</field>
+        <field name="model">budget.plan</field>
+        <field name="arch" type="xml">
+            <list string="Budget Plans" decoration-success="state == 'approved'" decoration-muted="state == 'cancelled'" decoration-info="state == 'draft'">
+                <field name="name"/>
+                <field name="cost_center_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="approved_by"/>
+                <field name="state" widget="badge" decoration-success="state == 'approved'" decoration-info="state == 'draft'" decoration-warning="state == 'submitted'" decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Budget Plan Search View -->
+    <record id="view_budget_plan_search" model="ir.ui.view">
+        <field name="name">budget.plan.search</field>
+        <field name="model">budget.plan</field>
+        <field name="arch" type="xml">
+            <search string="Budget Plan Search">
+                <field name="name" string="Reference"/>
+                <field name="cost_center_id"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Submitted" name="submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Closed" name="closed" domain="[('state', '=', 'closed')]"/>
+                <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter string="Currently Active" name="active" domain="[('is_currently_active', '=', True)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Cost Center" name="group_cost_center" context="{'group_by': 'cost_center_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Start Date" name="group_date_from" context="{'group_by': 'date_from:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Budget Plan Action -->
+    <record id="action_budget_plan" model="ir.actions.act_window">
+        <field name="name">Budget Plans</field>
+        <field name="res_model">budget.plan</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_budget_plan_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first budget plan.
+            </p>
+        </field>
+    </record>
+
+</odoo>

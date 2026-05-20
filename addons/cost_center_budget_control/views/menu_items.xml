@@ -13,6 +13,13 @@
               action="action_cost_center"
               sequence="10"/>
 
+    <!-- Menu for Budget Plans -->
+    <menuitem id="menu_cost_center_budget_plan"
+              name="Budget Plans"
+              parent="menu_cost_center_root"
+              action="action_budget_plan"
+              sequence="20"/>
+
     <!-- Action for Cost Center -->
     <record id="action_cost_center" model="ir.actions.act_window">
         <field name="name">Cost Centers</field>

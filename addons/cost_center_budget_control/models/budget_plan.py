@@ -219,21 +219,31 @@ class BudgetPlanLine(models.Model):
         currency_field="currency_id"
     )
     actual_amount = fields.Monetary(
-        string="Actual Amount", 
-        currency_field="currency_id", 
+        string="Actual Amount",
+        currency_field="currency_id",
         readonly=True,
-        # compute="_compute_actual_amount", store=True # Phase 2
+        compute="_compute_actual_amount",
+        store=True,
     )
     variance_amount = fields.Monetary(
-        string="Variance", 
-        currency_field="currency_id", 
+        string="Variance",
+        currency_field="currency_id",
         readonly=True,
-        # compute="_compute_variance_amount", store=True # Phase 2
+        compute="_compute_variance_amount",
+        store=True,
+    )
+    remaining_amount = fields.Monetary(
+        string="Remaining Amount",
+        currency_field="currency_id",
+        compute="_compute_remaining_amount",
+        store=True,
+        help="The remaining budget amount (Planned - Actual).",
     )
     usage_percent = fields.Float(
-        string="Usage %", 
+        string="Usage %",
         readonly=True,
-        # compute="_compute_usage_percent", store=True # Phase 2
+        compute="_compute_usage_percent",
+        store=True,
     )
     currency_id = fields.Many2one(
         "res.currency", 
@@ -249,6 +259,61 @@ class BudgetPlanLine(models.Model):
         store=True, 
         readonly=True
     )
+
+    # -------------------------------------------------------------------------
+    # COMPUTED FIELDS
+    # -------------------------------------------------------------------------
+
+    @api.depends(
+        "plan_id.date_from",
+        "plan_id.date_to",
+        "plan_id.cost_center_id.analytic_account_id",
+        "account_id",
+    )
+    def _compute_actual_amount(self):
+        for rec in self:
+            if not rec.plan_id or not rec.account_id:
+                rec.actual_amount = 0.0
+                continue
+
+            analytic_account = rec.plan_id.cost_center_id.analytic_account_id
+            if not analytic_account:
+                rec.actual_amount = 0.0
+                continue
+
+            domain = [
+                ("account_id", "=", rec.account_id.id),
+                ("analytic_account_id", "=", analytic_account.id),
+                ("parent_state", "=", "posted"),
+                ("date", ">=", rec.plan_id.date_from),
+                ("date", "<=", rec.plan_id.date_to),
+            ]
+            result = self.env["account.move.line"].read_group(
+                domain, ["balance:sum"], []
+            )
+            rec.actual_amount = abs(result[0]["balance"]) if result else 0.0
+
+    @api.depends("planned_amount", "actual_amount")
+    def _compute_variance_amount(self):
+        for rec in self:
+            rec.variance_amount = rec.planned_amount - rec.actual_amount
+
+    @api.depends("planned_amount", "actual_amount")
+    def _compute_remaining_amount(self):
+        for rec in self:
+            rec.remaining_amount = rec.planned_amount - rec.actual_amount
+
+    @api.depends("planned_amount", "actual_amount")
+    def _compute_usage_percent(self):
+        for rec in self:
+            if rec.planned_amount:
+                rec.usage_percent = (rec.actual_amount / rec.planned_amount) * 100
+            else:
+                rec.usage_percent = 0.0
+
+    # -------------------------------------------------------------------------
+    # ONCHANGE METHODS
+    # -------------------------------------------------------------------------
 
     @api.onchange("account_id")
     def _onchange_account_id(self):
