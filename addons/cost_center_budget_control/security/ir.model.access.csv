@@ -5,3 +5,5 @@ access_budget_plan_user,budget.plan.user,model_budget_plan,group_budget_user,1,1
 access_budget_plan_mgr,budget.plan.mgr,model_budget_plan,group_budget_manager,1,1,1,1
 access_budget_plan_line_user,budget.plan.line.user,model_budget_plan_line,group_budget_user,1,1,1,0
 access_budget_plan_line_mgr,budget.plan.line.mgr,model_budget_plan_line,group_budget_manager,1,1,1,1
+access_budget_allocation_user,budget.allocation.user,model_budget_allocation,group_budget_user,1,0,0,0
+access_budget_allocation_mgr,budget.allocation.mgr,model_budget_allocation,group_budget_manager,1,1,1,1
