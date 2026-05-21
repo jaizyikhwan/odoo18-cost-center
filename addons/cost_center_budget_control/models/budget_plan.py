@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.tools import float_round
 from datetime import date
 
 
@@ -221,10 +222,44 @@ class BudgetPlan(models.Model):
         return True
 
     def unlink(self):
+        if self.env.context.get('bypass_protection'):
+            return super().unlink()
+
         for rec in self:
-            if rec.state in ("submitted", "approved", "closed", "cancelled") and not self.env.su:
-                raise UserError(_("Cannot delete a budget that is not in Draft state."))
+            if rec.plan_id.state in ("submitted", "approved", "closed", "cancelled") and not self.env.su:
+                raise UserError(_("Cannot delete a budget line that is not in Draft state."))
         return super().unlink()
+
+    @api.model
+    def _get_impacted_budget_lines_from_move(self, move):
+        """Return budget lines impacted by a posted move."""
+        analytic_ids = set()
+        for line in move.line_ids.filtered(lambda l: l.company_id == move.company_id and l.parent_state == 'posted'):
+            if line.analytic_distribution:
+                analytic_ids |= set(line.analytic_distribution.keys())
+            elif line.analytic_account_id:
+                analytic_ids.add(str(line.analytic_account_id.id))
+
+        if not analytic_ids:
+            return self.browse()
+
+        date = move.date
+        return self.search([
+            ('company_id', '=', move.company_id.id),
+            ('plan_id.date_from', '<=', date),
+            ('plan_id.date_to', '>=', date),
+            ('plan_id.cost_center_id.analytic_account_id', '!=', False),
+            ('account_id', '!=', False),
+        ]).filtered(lambda rec: str(rec.plan_id.cost_center_id.analytic_account_id.id) in analytic_ids)
+
+    @api.model
+    def _recompute_actual_amount_batch(self, lines):
+        """Recompute actual_amount for impacted budget lines."""
+        if not lines:
+            return
+        lines._compute_actual_amount()
+        lines.flush_recordset(["actual_amount"])
+
 
     # ------------------------------------------------------------------------- 
     # WORKFLOW ACTIONS
@@ -358,57 +393,75 @@ class BudgetPlanLine(models.Model):
         "account_id",
     )
     def _compute_actual_amount(self):
-        # Batch aggregation to eliminate N+1 bottleneck
-        # We group by the composite key: analytic_account_id, account_id, and date range
-        # Note: company_id is implicitly handled by analytic_account_id and account_id
-        
-        plans = self.mapped("plan_id")
-        if not plans:
-            self.actual_amount = 0.0
-            return
+        """Compute actual amount supporting analytic_distribution (JSONB) and legacy analytic_account_id.
 
-        # Prepare a map to store results: (analytic_id, account_id, date_from, date_to) -> balance
-        # This composite key ensures no leakage between different budget periods or cost centers
-        data_map = {}
-
-        # Group lines by their unique aggregation context
-        # We process each unique plan's criteria once
-        unique_contexts = set()
-        for rec in self:
-            if rec.plan_id and rec.account_id:
-                analytic_id = rec.plan_id.cost_center_id.analytic_account_id.id
-                if analytic_id:
-                    unique_contexts.add((
-                        analytic_id,
-                        rec.plan_id.date_from,
-                        rec.plan_id.date_to
-                    ))
-
-        for analytic_id, date_from, date_to in unique_contexts:
-            domain = [
-                ("analytic_account_id", "=", analytic_id),
-                ("parent_state", "=", "posted"),
-                ("date", ">=", date_from),
-                ("date", "<=", date_to),
-            ]
-            # Use _read_group for Odoo 18 canonical batch aggregation
-            groups = self.env["account.move.line"]._read_group(
-                domain, 
-                ['account_id'], 
-                ['balance:sum']
-            )
-            for account, balance_sum in groups:
-                data_map[(analytic_id, account.id, date_from, date_to)] = balance_sum
-
+        Uses parameterized raw SQL aggregation for weighted sums on analytic_distribution.
+        Falls back to legacy analytic_account_id only when distribution is empty.
+        This method is pure and has no side effects; recompute orchestration is external.
+        """
         for rec in self:
             if not rec.plan_id or not rec.account_id:
                 rec.actual_amount = 0.0
                 continue
 
-            analytic_id = rec.plan_id.cost_center_id.analytic_account_id.id
-            key = (analytic_id, rec.account_id.id, rec.plan_id.date_from, rec.plan_id.date_to)
-            # Use raw balance behavior (debit - credit) naturally provided by Odoo
-            rec.actual_amount = data_map.get(key, 0.0)
+            plan = rec.plan_id
+            analytic_account = plan.cost_center_id.analytic_account_id
+            if not analytic_account:
+                # No analytic key configured on cost center, nothing to aggregate
+                rec.actual_amount = 0.0
+                continue
+
+            analytic_key = str(analytic_account.id)
+
+            # SQL: weighted aggregation via analytic_distribution JSONB
+            sql_weighted = (
+                "SELECT COALESCE(SUM((l.balance)::numeric * (l.analytic_distribution->>%s)::numeric / 100.0), 0.0) "
+                "FROM account_move_line l "
+                "WHERE l.account_id = %s "
+                "AND l.company_id = %s "
+                "AND l.parent_state = 'posted' "
+                "AND l.date >= %s "
+                "AND l.date <= %s "
+                "AND l.analytic_distribution ? %s"
+            )
+
+            params = (
+                analytic_key,
+                rec.account_id.id,
+                rec.company_id.id,
+                plan.date_from,
+                plan.date_to,
+                analytic_key,
+            )
+            self.env.cr.execute(sql_weighted, params)
+            weighted_sum = self.env.cr.fetchone()[0] or 0.0
+
+            if float(weighted_sum) != 0.0:
+                rec.actual_amount = float_round(weighted_sum, precision_digits=rec.currency_id.decimal_places)
+                continue
+
+            # Fallback: legacy analytic_account_id for lines without analytic_distribution
+            sql_fallback = (
+                "SELECT COALESCE(SUM((l.balance)::numeric), 0.0) "
+                "FROM account_move_line l "
+                "WHERE l.account_id = %s "
+                "AND l.company_id = %s "
+                "AND l.parent_state = 'posted' "
+                "AND l.date >= %s "
+                "AND l.date <= %s "
+                "AND l.analytic_account_id = %s "
+                "AND (l.analytic_distribution IS NULL OR l.analytic_distribution = '{}'::jsonb)"
+            )
+            params_fb = (
+                rec.account_id.id,
+                rec.company_id.id,
+                plan.date_from,
+                plan.date_to,
+                analytic_account.id,
+            )
+            self.env.cr.execute(sql_fallback, params_fb)
+            fallback_sum = self.env.cr.fetchone()[0] or 0.0
+            rec.actual_amount = float_round(fallback_sum, precision_digits=rec.currency_id.decimal_places)
 
     @api.depends("planned_amount", "actual_amount")
     def _compute_variance_amount(self):

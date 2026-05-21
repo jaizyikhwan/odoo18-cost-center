@@ -24,6 +24,8 @@ Enterprise-grade Cost Center management for Odoo 18 Community Edition.
         "views/budget_plan_views.xml",
         "views/menu_items.xml",
     ],
+    "post_init_hook": "post_init_hook",
+
     "demo": [
         "demo/demo.xml",
     ],
