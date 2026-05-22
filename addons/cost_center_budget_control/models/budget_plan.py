@@ -13,9 +13,9 @@ class BudgetPlan(models.Model):
 
     name = fields.Char(string="Reference", required=True, tracking=True)
     cost_center_id = fields.Many2one(
-        "cost.center", 
-        string="Cost Center", 
-        required=True, 
+        "cost.center",
+        string="Cost Center",
+        required=True,
         tracking=True,
         ondelete="restrict",
         check_company=True,
@@ -24,39 +24,39 @@ class BudgetPlan(models.Model):
     date_from = fields.Date(string="Start Date", required=True, tracking=True)
     date_to = fields.Date(string="End Date", required=True, tracking=True)
     state = fields.Selection([(
-        "draft", "Draft"), 
-        ("submitted", "Submitted"), 
+        "draft", "Draft"),
+        ("submitted", "Submitted"),
         ("approved", "Approved"),
         ("closed", "Closed"),
-        ("cancelled", "Cancelled")], 
-        string="Status", 
-        default="draft", 
+        ("cancelled", "Cancelled")],
+        string="Status",
+        default="draft",
         tracking=True,
         readonly=True,
         help="The status of the budget plan."
     )
     company_id = fields.Many2one(
-        "res.company", 
-        string="Company", 
+        "res.company",
+        string="Company",
         required=True,
-        related="cost_center_id.company_id", 
-        store=True, 
+        related="cost_center_id.company_id",
+        store=True,
         readonly=True
     )
     currency_id = fields.Many2one(
-        "res.currency", 
-        string="Currency", 
-        related="company_id.currency_id", 
+        "res.currency",
+        string="Currency",
+        related="company_id.currency_id",
         readonly=True,
         store=True
     )
     line_ids = fields.One2many(
-        "budget.plan.line", 
-        "plan_id", 
-        string="Budget Lines", 
+        "budget.plan.line",
+        "plan_id",
+        string="Budget Lines",
         copy=True
     )
-    
+
     is_currently_active = fields.Boolean(
         string="Currently Active",
         compute="_compute_is_currently_active",
@@ -66,23 +66,23 @@ class BudgetPlan(models.Model):
     approved_by = fields.Many2one("res.users", string="Approved By", readonly=True, copy=False)
     approved_date = fields.Datetime(string="Approved Date", readonly=True, copy=False)
 
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
     # COMPUTED FIELDS
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
 
     @api.depends("state", "date_from", "date_to")
     def _compute_is_currently_active(self):
         today = date.today()
         for rec in self:
             rec.is_currently_active = (
-                rec.state == "approved" 
-                and rec.date_from <= today 
+                rec.state == "approved"
+                and rec.date_from <= today
                 and rec.date_to >= today
             )
 
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
     # CONSTRAINTS & ORM OVERRIDES
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
 
     @api.constrains("date_from", "date_to")
     def _check_dates(self):
@@ -94,7 +94,6 @@ class BudgetPlan(models.Model):
     def _check_overlap(self):
         for rec in self:
             if rec.state in ("approved", "submitted") and rec.cost_center_id:
-                # Check for overlapping 'approved' or 'submitted' budgets for the same cost center
                 overlap_domain = [
                     ("cost_center_id", "=", rec.cost_center_id.id),
                     ("id", "!=", rec.id),
@@ -116,7 +115,6 @@ class BudgetPlan(models.Model):
 
     @staticmethod
     def _is_mail_write(vals):
-        """Check if write only contains mail-related fields."""
         mail_fields = {
             "message_follower_ids",
             "activity_ids",
@@ -137,13 +135,6 @@ class BudgetPlan(models.Model):
         return all(field in mail_fields for field in vals)
 
     def _check_state_protection(self, vals):
-        """Validate state-based write protection.
-
-        Rules:
-        - Mail-only writes are always allowed
-        - Business field writes blocked in protected states
-        - Submitted state restricted to Budget Managers
-        """
         if self.env.su:
             return
 
@@ -164,10 +155,6 @@ class BudgetPlan(models.Model):
                     )
 
     def _filter_protected_fields(self, vals):
-        """Remove business fields from vals if state is protected.
-
-        Returns filtered vals containing only allowed fields.
-        """
         if self.env.su:
             return vals
 
@@ -202,68 +189,15 @@ class BudgetPlan(models.Model):
     # -------------------------------------------------------------------------
 
     def write(self, vals):
-        """Enforce state protection before write.
-
-        Protection flow:
-        1. Always validate state protection first
-        2. Filter out business fields if state is protected
-        3. Allow mail-only writes in any state
-        4. Proceed with super().write() only if vals is non-empty
-        """
-        # Step 1: Always check state protection
         self._check_state_protection(vals)
-
-        # Step 2: Filter protected business fields
         vals = self._filter_protected_fields(vals)
-
-        # Step 3: Only call super if there are remaining fields to write
         if vals:
             return super().write(vals)
         return True
 
-    def unlink(self):
-        if self.env.context.get('bypass_protection'):
-            return super().unlink()
-
-        for rec in self:
-            if rec.plan_id.state in ("submitted", "approved", "closed", "cancelled") and not self.env.su:
-                raise UserError(_("Cannot delete a budget line that is not in Draft state."))
-        return super().unlink()
-
-    @api.model
-    def _get_impacted_budget_lines_from_move(self, move):
-        """Return budget lines impacted by a posted move."""
-        analytic_ids = set()
-        for line in move.line_ids.filtered(lambda l: l.company_id == move.company_id and l.parent_state == 'posted'):
-            if line.analytic_distribution:
-                analytic_ids |= set(line.analytic_distribution.keys())
-            elif line.analytic_account_id:
-                analytic_ids.add(str(line.analytic_account_id.id))
-
-        if not analytic_ids:
-            return self.browse()
-
-        date = move.date
-        return self.search([
-            ('company_id', '=', move.company_id.id),
-            ('plan_id.date_from', '<=', date),
-            ('plan_id.date_to', '>=', date),
-            ('plan_id.cost_center_id.analytic_account_id', '!=', False),
-            ('account_id', '!=', False),
-        ]).filtered(lambda rec: str(rec.plan_id.cost_center_id.analytic_account_id.id) in analytic_ids)
-
-    @api.model
-    def _recompute_actual_amount_batch(self, lines):
-        """Recompute actual_amount for impacted budget lines."""
-        if not lines:
-            return
-        lines._compute_actual_amount()
-        lines.flush_recordset(["actual_amount"])
-
-
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
     # WORKFLOW ACTIONS
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
 
     def action_submit(self):
         for rec in self:
@@ -316,17 +250,47 @@ class BudgetPlanLine(models.Model):
     _description = "Budget Plan Line"
     _check_company_auto = True
 
+    @api.model
+    def _get_impacted_budget_lines_from_move(self, move):
+        """Return budget lines impacted by a posted move."""
+        analytic_ids = set()
+        for line in move.line_ids.filtered(lambda l: l.company_id == move.company_id and l.parent_state == 'posted'):
+            if line.analytic_distribution:
+                analytic_ids |= set(line.analytic_distribution.keys())
+            elif line.analytic_account_id:
+                analytic_ids.add(str(line.analytic_account_id.id))
+
+        if not analytic_ids:
+            return self.browse()
+
+        date = move.date
+        return self.search([
+            ('company_id', '=', move.company_id.id),
+            ('plan_id.date_from', '<=', date),
+            ('plan_id.date_to', '>=', date),
+            ('plan_id.cost_center_id.analytic_account_id', '!=', False),
+            ('account_id', '!=', False),
+        ]).filtered(lambda rec: str(rec.plan_id.cost_center_id.analytic_account_id.id) in analytic_ids)
+
+    @api.model
+    def _recompute_actual_amount_batch(self, lines):
+        """Recompute actual_amount for impacted budget lines."""
+        if not lines:
+            return
+        lines._compute_actual_amount()
+        lines.flush_recordset(["actual_amount"])
+
     plan_id = fields.Many2one(
-        "budget.plan", 
-        string="Budget Plan", 
-        required=True, 
-        ondelete="cascade", 
+        "budget.plan",
+        string="Budget Plan",
+        required=True,
+        ondelete="cascade",
         index=True,
         check_company=True,
     )
     account_id = fields.Many2one(
-        "account.account", 
-        string="Account", 
+        "account.account",
+        string="Account",
         required=True,
         index=True,
         check_company=True,
@@ -336,7 +300,7 @@ class BudgetPlanLine(models.Model):
     )
     name = fields.Char(string="Description", default="")
     planned_amount = fields.Monetary(
-        string="Planned Amount", 
+        string="Planned Amount",
         required=True,
         currency_field="currency_id"
     )
@@ -367,18 +331,24 @@ class BudgetPlanLine(models.Model):
         compute="_compute_usage_percent",
         store=True,
     )
+    alert_level = fields.Selection([
+        ("normal", "Normal"),
+        ("warning", "Warning"),
+        ("danger", "Danger"),
+        ("exceeded", "Exceeded"),
+    ], compute="_compute_alert_level", store=True, readonly=True)
     currency_id = fields.Many2one(
-        "res.currency", 
-        string="Currency", 
-        related="plan_id.currency_id", 
+        "res.currency",
+        string="Currency",
+        related="plan_id.currency_id",
         readonly=True,
         store=True
     )
     company_id = fields.Many2one(
-        "res.company", 
-        string="Company", 
-        related="plan_id.company_id", 
-        store=True, 
+        "res.company",
+        string="Company",
+        related="plan_id.company_id",
+        store=True,
         readonly=True
     )
 
@@ -400,14 +370,13 @@ class BudgetPlanLine(models.Model):
         This method is pure and has no side effects; recompute orchestration is external.
         """
         for rec in self:
-            if not rec.plan_id or not rec.account_id:
+            if not all([rec.plan_id, rec.account_id]):
                 rec.actual_amount = 0.0
                 continue
 
             plan = rec.plan_id
             analytic_account = plan.cost_center_id.analytic_account_id
             if not analytic_account:
-                # No analytic key configured on cost center, nothing to aggregate
                 rec.actual_amount = 0.0
                 continue
 
@@ -465,8 +434,6 @@ class BudgetPlanLine(models.Model):
 
     @api.depends("planned_amount", "actual_amount")
     def _compute_variance_amount(self):
-        # Variance = Planned - Actual
-        # Positive variance means under budget, negative means over budget
         for rec in self:
             rec.variance_amount = rec.planned_amount - rec.actual_amount
 
@@ -483,8 +450,20 @@ class BudgetPlanLine(models.Model):
             else:
                 rec.usage_percent = 0.0
 
+    @api.depends("usage_percent")
+    def _compute_alert_level(self):
+        for rec in self:
+            pct = rec.usage_percent
+            if pct >= 100.0:
+                rec.alert_level = "exceeded"
+            elif pct >= 90.0:
+                rec.alert_level = "danger"
+            elif pct >= 70.0:
+                rec.alert_level = "warning"
+            else:
+                rec.alert_level = "normal"
+
     def write(self, vals):
-        # Always check protection for line writes
         if self.env.context.get('bypass_protection'):
             return super().write(vals)
 
@@ -501,4 +480,3 @@ class BudgetPlanLine(models.Model):
             if rec.plan_id.state in ("submitted", "approved", "closed", "cancelled") and not self.env.su:
                 raise UserError(_("Cannot delete a budget line that is not in Draft state."))
         return super().unlink()
-
