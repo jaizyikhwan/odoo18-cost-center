@@ -48,6 +48,7 @@
                                     <field name="variance_amount" sum="Total Variance"/>
                                     <field name="remaining_amount" sum="Total Remaining"/>
                                     <field name="usage_percent" widget="progressbar" options="{'current_value': 'usage_percent', 'max_value': 100}"/>
+                                    <field name="alert_level"/>
                                 </list>
                             </field>
                         </page>
@@ -93,6 +94,10 @@
                 <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
                 <separator/>
                 <filter string="Currently Active" name="active" domain="[('is_currently_active', '=', True)]"/>
+                <separator/>
+                <filter string="Alert: Warning" name="alert_warning" domain="[('line_ids.alert_level', '=', 'warning')]"/>
+                <filter string="Alert: Danger" name="alert_danger" domain="[('line_ids.alert_level', '=', 'danger')]"/>
+                <filter string="Alert: Exceeded" name="alert_exceeded" domain="[('line_ids.alert_level', '=', 'exceeded')]"/>
                 <separator/>
                 <group expand="0" string="Group By">
                     <filter string="Cost Center" name="group_cost_center" context="{'group_by': 'cost_center_id'}"/>
