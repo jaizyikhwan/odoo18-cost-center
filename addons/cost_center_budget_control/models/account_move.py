@@ -125,7 +125,11 @@ class AccountMove(models.Model):
         return result
 
     def _post(self, **kwargs):
-        """Posting hook that validates budget control before posting.
+        """Overrides the standard _post method to integrate budget control validation and actual amount recomputation.
+        This method acts as the main integration point for budget control checks and triggers re-calculation
+        of budget actual amounts for impacted budget lines after an account move is posted or unposted.
+
+        Posting hook that validates budget control before posting.
         
         1. Validate budget thresholds (may raise UserError to block).
         2. Execute normal posting logic.

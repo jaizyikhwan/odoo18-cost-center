@@ -1,30 +1,150 @@
 <odoo>
-    <data>
-<!--
-          <record id="object0" model="cost_center_budget_control.cost_center_budget_control">
-            <field name="name">Object 0</field>
-            <field name="value">0</field>
-          </record>
+    <data noupdate="1">
+        <!-- Demo Users -->
+        <record id="demo_budget_user" model="res.users">
+            <field name="name">Demo Budget User</field>
+            <field name="login">demouser</field>
+            <field name="password">demouser</field>
+            <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_user'))]"/>
+        </record>
 
-          <record id="object1" model="cost_center_budget_control.cost_center_budget_control">
-            <field name="name">Object 1</field>
-            <field name="value">10</field>
-          </record>
+        <record id="demo_budget_manager" model="res.users">
+            <field name="name">Demo Budget Manager</field>
+            <field name="login">demomanager</field>
+            <field name="password">demomanager</field>
+            <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_manager')),
+                                       (4, ref('cost_center_budget_control.group_budget_override_manager'))]"/>
+        </record>
 
-          <record id="object2" model="cost_center_budget_control.cost_center_budget_control">
-            <field name="name">Object 2</field>
-            <field name="value">20</field>
-          </record>
+        <!-- Demo Company -->
+        <record id="demo_company" model="res.company">
+            <field name="name">Demo Company for Budget</field>
+            <field name="currency_id" ref="base.USD"/>
+        </record>
 
-          <record id="object3" model="cost_center_budget_control.cost_center_budget_control">
-            <field name="name">Object 3</field>
-            <field name="value">30</field>
-          </record>
+        <!-- Demo Analytic Account -->
+        <record id="analytic_account_sales_demo" model="account.analytic.account">
+            <field name="name">Sales Department AA</field>
+            <field name="company_id" ref="demo_company"/>
+        </record>
 
-          <record id="object4" model="cost_center_budget_control.cost_center_budget_control">
-            <field name="name">Object 4</field>
-            <field name="value">40</field>
-          </record>
--->
+        <!-- Demo Cost Center -->
+        <record id="cost_center_sales_dept_demo" model="cost.center">
+            <field name="name">Sales Department</field>
+            <field name="code">SALES</field>
+            <field name="company_id" ref="demo_company"/>
+            <field name="analytic_account_id" ref="analytic_account_sales_dept_demo"/>
+            <field name="responsible_id" ref="demo_budget_manager"/>
+        </record>
+
+        <!-- Demo Expense Account -->
+        <record id="account_expenses_general_demo" model="account.account">
+            <field name="name">General Expenses Demo</field>
+            <field name="code">600000</field>
+            <field name="account_type">expense</field>
+            <field name="company_id" ref="demo_company"/>
+        </record>
+
+        <!-- Demo Journal -->
+        <record id="journal_misc_demo" model="account.journal">
+            <field name="name">Miscellaneous Operations Demo</field>
+            <field name="type">general</field>
+            <field name="code">MISC-D</field>
+            <field name="company_id" ref="demo_company"/>
+        </record>
+
+        <!-- Demo Budget Plan -->
+        <record id="budget_plan_q1_sales_demo" model="budget.plan">
+            <field name="name">Q1 Sales Budget</field>
+            <field name="cost_center_id" ref="cost_center_sales_dept_demo"/>
+            <field name="date_from">2026-01-01</field>
+            <field name="date_to">2026-03-31</field>
+            <field name="state">approved</field>
+            <field name="approved_by" ref="base.user_admin"/>
+            <field name="approved_date" eval="(DateTime.now() - relativedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="line_ids" eval="[(0,0, {
+                'account_id': ref('account_expenses_general_demo'),
+                'name': 'Marketing Expenses',
+                'planned_amount': 1000.0,
+            })]"/>
+        </record>
+        
+        <!-- Demo Budget Plan Line - will be over budget -->
+        <record id="budget_plan_line_q1_sales_expenses_demo" model="budget.plan.line">
+            <field name="plan_id" ref="budget_plan_q1_sales_demo"/>
+            <field name="account_id" ref="account_expenses_general_demo"/>
+            <field name="name">Sales Team Travel</field>
+            <field name="planned_amount">500.0</field>
+        </record>
+
+        <!-- Demo Allocation -->
+        <record id="allocation_q1_sales_demo" model="budget.allocation">
+            <field name="name">Q1 Marketing Overhead Allocation</field>
+            <field name="source_cost_center_id" ref="cost_center_sales_dept_demo"/>
+            <field name="target_cost_center_ids" eval="[(4, ref('cost_center_sales_dept_demo'))]"/>
+            <field name="allocation_rules" eval="{'%s' % ref('cost_center_sales_dept_demo'): 100.0}"/>
+            <field name="amount_base">600.0</field>
+            <field name="allocation_date">2026-02-15</field>
+            <field name="overhead_account_id" ref="account_expenses_general_demo"/>
+            <field name="target_account_id" ref="account_expenses_general_demo"/>
+            <field name="journal_id" ref="journal_misc_demo"/>
+            <field name="company_id" ref="demo_company"/>
+            <field name="state">posted</field>
+        </record>
+        
+        <!-- Simulate an over-budget transaction for 'Sales Team Travel' -->
+        <function model="account.move" name="create">
+            <value eval="[{
+                'journal_id': ref('journal_misc_demo'),
+                'date': '2026-02-20',
+                'company_id': ref('demo_company'),
+                'ref': 'DEMO/OVERBUDGET/SALES/Q1',
+                'line_ids': [
+                    (0, 0, {
+                        'account_id': ref('account_expenses_general_demo'),
+                        'debit': 600.0,
+                        'credit': 0.0,
+                        'analytic_distribution': {str(ref('analytic_account_sales_dept_demo')): 100.0}
+                    }),
+                    (0, 0, {
+                        'account_id': ref('account_expenses_general_demo'),
+                        'debit': 0.0,
+                        'credit': 600.0,
+                    }),
+                ],
+            }]"/>
+        </function>
+
+
+        <!-- Budget Control Settings for Demo -->
+        <record id="ir_config_parameter_budget_enabled_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.enabled</field>
+            <field name="value">True</field>
+        </record>
+        <record id="ir_config_parameter_budget_mode_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.mode</field>
+            <field name="value">blocking</field>
+        </record>
+        <record id="ir_config_parameter_budget_warning_threshold_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.warning_threshold</field>
+            <field name="value">70.0</field>
+        </record>
+        <record id="ir_config_parameter_budget_critical_threshold_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.critical_threshold</field>
+            <field name="value">90.0</field>
+        </record>
+        <record id="ir_config_parameter_budget_blocking_threshold_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.blocking_threshold</field>
+            <field name="value">100.0</field>
+        </record>
+        <record id="ir_config_parameter_chatter_enabled_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.chatter_enabled</field>
+            <field name="value">True</field>
+        </record>
+        <record id="ir_config_parameter_activity_enabled_demo" model="ir.config_parameter">
+            <field name="key">cost_center_budget_control.activity_enabled</field>
+            <field name="value">True</field>
+        </record>
+
     </data>
 </odoo>

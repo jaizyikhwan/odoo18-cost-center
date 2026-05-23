@@ -18,7 +18,7 @@
                             <div class="content-group mt16">
                                 <div class="row mt16">
                                     <label for="budget_control_enabled" class="o_light_label col-lg-4"/>
-                                    <field name="budget_control_enabled"/>
+                                    <field name="budget_control_enabled" help="Activate or deactivate all budget control functionalities."/>
                                 </div>
                             </div>
                         </div>
@@ -32,7 +32,7 @@
                             <div class="content-group mt16">
                                 <div class="row mt16">
                                     <label for="budget_control_mode" class="o_light_label col-lg-4"/>
-                                    <field name="budget_control_mode"/>
+                                    <field name="budget_control_mode" help="Choose how the system reacts when budgets exceed their thresholds."/>
                                 </div>
                             </div>
                         </div>
@@ -46,15 +46,15 @@
                             <div class="content-group mt16">
                                 <div class="row mt16">
                                     <label for="budget_warning_threshold" class="o_light_label col-lg-4"/>
-                                    <field name="budget_warning_threshold"/>
+                                    <field name="budget_warning_threshold" help="The percentage of budget usage that triggers a warning message."/>
                                 </div>
                                 <div class="row mt16">
                                     <label for="budget_critical_threshold" class="o_light_label col-lg-4"/>
-                                    <field name="budget_critical_threshold"/>
+                                    <field name="budget_critical_threshold" help="The percentage of budget usage that triggers a critical alert."/>
                                 </div>
                                 <div class="row mt16">
                                     <label for="budget_blocking_threshold" class="o_light_label col-lg-4"/>
-                                    <field name="budget_blocking_threshold"/>
+                                    <field name="budget_blocking_threshold" help="The percentage of budget usage that blocks posting of an account move in 'Blocking' mode."/>
                                 </div>
                             </div>
                         </div>
@@ -68,11 +68,11 @@
                             <div class="content-group mt16">
                                 <div class="row mt16">
                                     <label for="budget_chatter_enabled" class="o_light_label col-lg-4"/>
-                                    <field name="budget_chatter_enabled"/>
+                                    <field name="budget_chatter_enabled" help="Display budget alerts in the chatter of related documents."/>
                                 </div>
                                 <div class="row mt16">
                                     <label for="budget_activity_enabled" class="o_light_label col-lg-4"/>
-                                    <field name="budget_activity_enabled"/>
+                                    <field name="budget_activity_enabled" help="Schedule activities for budget managers when critical thresholds are exceeded."/>
                                 </div>
                             </div>
                         </div>
