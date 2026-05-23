@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_budget_reporting_dashboard" model="ir.ui.view">
+        <field name="name">budget.reporting.dashboard</field>
+        <field name="model">board.board</field>
+        <field name="arch" type="xml">
+            <board style="2-2">
+                <column>
+                    <action string="Budget Analysis" name="%(cost_center_budget_control.action_budget_analysis)d"/>
+                    <action string="Over Budget Lines" name="%(cost_center_budget_control.action_budget_over_budget_lines)d"/>
+                </column>
+                <column>
+                    <action string="Budget Graphs" name="%(cost_center_budget_control.action_budget_graphs)d"/>
+                    <action string="Allocation Analysis" name="%(cost_center_budget_control.action_allocation_analysis)d"/>
+                </column>
+            </board>
+        </field>
+    </record>
+
+    <record id="action_budget_reporting_dashboard" model="ir.actions.act_window">
+        <field name="name">Budget Dashboard</field>
+        <field name="res_model">board.board</field>
+        <field name="view_mode">board</field>
+        <field name="view_id" ref="view_budget_reporting_dashboard"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>
