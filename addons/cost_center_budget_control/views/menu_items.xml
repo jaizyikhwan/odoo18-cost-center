@@ -20,6 +20,36 @@
               action="action_budget_plan"
               sequence="20"/>
 
+    <!-- Reporting -->
+    <menuitem id="menu_cost_center_reporting_root"
+              name="Reporting"
+              parent="menu_cost_center_root"
+              sequence="30"/>
+
+    <menuitem id="menu_cost_center_reporting_dashboard"
+              name="Dashboard"
+              parent="menu_cost_center_reporting_root"
+              action="action_budget_reporting_dashboard"
+              sequence="1"/>
+
+    <menuitem id="menu_cost_center_reporting_budget_analysis"
+              name="Budget Analysis"
+              parent="menu_cost_center_reporting_root"
+              action="action_budget_analysis"
+              sequence="10"/>
+
+    <menuitem id="menu_cost_center_reporting_budget_graphs"
+              name="Budget Graphs"
+              parent="menu_cost_center_reporting_root"
+              action="action_budget_graphs"
+              sequence="20"/>
+
+    <menuitem id="menu_cost_center_reporting_allocation_analysis"
+              name="Allocation Analysis"
+              parent="menu_cost_center_reporting_root"
+              action="action_allocation_analysis"
+              sequence="30"/>
+
     <!-- Action for Cost Center -->
     <record id="action_cost_center" model="ir.actions.act_window">
         <field name="name">Cost Centers</field>

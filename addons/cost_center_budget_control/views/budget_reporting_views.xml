@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_budget_plan_line_reporting_search" model="ir.ui.view">
+        <field name="name">budget.plan.line.reporting.search</field>
+        <field name="model">budget.plan.line</field>
+        <field name="arch" type="xml">
+            <search string="Budget Lines Analysis">
+                <field name="plan_id"/>
+                <field name="account_id"/>
+                <field name="company_id"/>
+
+                <separator/>
+
+                <filter string="Over Budget" name="over_budget" domain="[('alert_level', '=', 'exceeded')]"/>
+                <filter string="Warning" name="alert_warning" domain="[('alert_level', '=', 'warning')]"/>
+                <filter string="Danger" name="alert_danger" domain="[('alert_level', '=', 'danger')]"/>
+                <filter string="Exceeded" name="alert_exceeded" domain="[('alert_level', '=', 'exceeded')]"/>
+
+                <separator/>
+
+                <filter string="Approved Plans" name="approved_plans" domain="[('plan_id.state', '=', 'approved')]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Budget Plan" name="group_plan" context="{'group_by': 'plan_id'}"/>
+                    <filter string="Account" name="group_account" context="{'group_by': 'account_id'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_budget_plan_line_reporting_pivot" model="ir.ui.view">
+        <field name="name">budget.plan.line.reporting.pivot</field>
+        <field name="model">budget.plan.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Budget Analysis" disable_linking="1">
+                <field name="planned_amount" type="measure" string="Planned"/>
+                <field name="actual_amount" type="measure" string="Actual"/>
+                <field name="remaining_amount" type="measure" string="Remaining"/>
+                <field name="variance_amount" type="measure" string="Variance"/>
+                <field name="usage_percent" type="measure" string="Avg Usage %" operator="avg"/>
+
+                <field name="plan_id" type="row"/>
+                <field name="account_id" type="row"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_budget_plan_line_reporting_graph" model="ir.ui.view">
+        <field name="name">budget.plan.line.reporting.graph</field>
+        <field name="model">budget.plan.line</field>
+        <field name="arch" type="xml">
+            <graph string="Budget Graphs" type="bar" disable_linking="1">
+                <field name="planned_amount" type="measure" string="Planned"/>
+                <field name="actual_amount" type="measure" string="Actual"/>
+                <field name="plan_id" type="row"/>
+                <field name="account_id" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_budget_analysis" model="ir.actions.act_window">
+        <field name="name">Budget Analysis</field>
+        <field name="res_model">budget.plan.line</field>
+        <field name="view_mode">pivot</field>
+        <field name="search_view_id" ref="view_budget_plan_line_reporting_search"/>
+        <field name="view_id" ref="view_budget_plan_line_reporting_pivot"/>
+        <field name="context">{'search_default_group_plan': 1, 'search_default_group_account': 1}</field>
+    </record>
+
+    <record id="action_budget_graphs" model="ir.actions.act_window">
+        <field name="name">Budget Graphs</field>
+        <field name="res_model">budget.plan.line</field>
+        <field name="view_mode">graph</field>
+        <field name="search_view_id" ref="view_budget_plan_line_reporting_search"/>
+        <field name="view_id" ref="view_budget_plan_line_reporting_graph"/>
+    </record>
+
+    <record id="action_budget_over_budget_lines" model="ir.actions.act_window">
+        <field name="name">Over Budget Lines</field>
+        <field name="res_model">budget.plan.line</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="search_view_id" ref="view_budget_plan_line_reporting_search"/>
+        <field name="domain">[('alert_level', '=', 'exceeded')]</field>
+    </record>
+
+</odoo>
