@@ -75,15 +75,41 @@ class CostCenter(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if not vals.get("analytic_account_id"):
-                # Hybrid lifecycle: Auto-create analytic account if not provided
                 company_id = vals.get("company_id") or self.env.company.id
-                analytic_vals = {
-                    "name": f"[{vals.get('code')}] {vals.get('name')}" if vals.get('code') else vals.get('name'),
-                    "company_id": company_id,
-                }
-                analytic_account = self.env["account.analytic.account"].create(analytic_vals)
+                analytic_account = self._create_analytic_account(
+                    code=vals.get("code"),
+                    name=vals.get("name"),
+                    company_id=company_id,
+                )
                 vals["analytic_account_id"] = analytic_account.id
         return super().create(vals_list)
+
+    def write(self, vals):
+        if "code" in vals or "name" in vals:
+            new_code = vals.get("code")
+            new_name = vals.get("name")
+            for rec in self:
+                if rec.analytic_account_id:
+                    code = new_code or rec.code
+                    name = new_name or rec.name
+                    rec.analytic_account_id.name = f"[{code}] {name}" if code else name
+        return super().write(vals)
+
+    def _create_analytic_account(self, code, name, company_id):
+        plan_model = self.env["account.analytic.plan"]
+        domain = []
+        if "company_id" in plan_model._fields:
+            domain = ["|", ("company_id", "=", company_id), ("company_id", "=", False)]
+        elif "company_ids" in plan_model._fields:
+            domain = ["|", ("company_ids", "in", company_id), ("company_ids", "=", False)]
+        plan = plan_model.search(domain, order="sequence, id", limit=1)
+        analytic_vals = {
+            "name": f"[{code}] {name}" if code else name,
+            "company_id": company_id,
+        }
+        if plan:
+            analytic_vals["plan_id"] = plan.id
+        return self.env["account.analytic.account"].create(analytic_vals)
 
     _sql_constraints = [
         ("code_company_uniq", "unique(code, company_id)", "The cost center code must be unique per company!"),

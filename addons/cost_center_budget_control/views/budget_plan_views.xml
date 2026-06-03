@@ -17,6 +17,14 @@
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
+                        <button name="%(account.action_account_form)d"
+                                type="action"
+                                class="oe_stat_button"
+                                icon="fa-book">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Chart of Accounts</span>
+                            </div>
+                        </button>
                     </div>
                     <div class="oe_title">
                         <h1>
@@ -40,10 +48,11 @@
                     <notebook>
                         <page string="Budget Lines" name="lines">
                             <field name="line_ids" readonly="state in ('approved', 'closed', 'cancelled')">
-                                <list editable="bottom">
-                                    <field name="account_id"/>
-                                    <field name="name"/>
-                                    <field name="planned_amount" sum="Total Planned"/>
+                                    <list editable="bottom">
+                                        <field name="account_id"/>
+                                        <field name="name"/>
+                                        <field name="currency_id" invisible="1"/>
+                                        <field name="planned_amount" sum="Total Planned"/>
                                     <field name="actual_amount" sum="Total Actual"/>
                                     <field name="variance_amount" sum="Total Variance"/>
                                     <field name="remaining_amount" sum="Total Remaining"/>
@@ -93,7 +102,6 @@
                 <filter string="Closed" name="closed" domain="[('state', '=', 'closed')]"/>
                 <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
                 <separator/>
-                <filter string="Currently Active" name="active" domain="[('is_currently_active', '=', True)]"/>
                 <separator/>
                 <filter string="Alert: Warning" name="alert_warning" domain="[('line_ids.alert_level', '=', 'warning')]"/>
                 <filter string="Alert: Danger" name="alert_danger" domain="[('line_ids.alert_level', '=', 'danger')]"/>

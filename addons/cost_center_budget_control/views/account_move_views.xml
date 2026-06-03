@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Force Journal Items Tab to be visible for Manual testing moves without locking it behind readonly group -->
+    <record id="view_move_form_inherit_budget" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.budget</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <!-- Remove restriction groups for aml_tab so it shows up for testing -->
+            <xpath expr="//page[@id='aml_tab']" position="attributes">
+                <attribute name="groups"></attribute>
+                <attribute name="invisible">move_type != 'entry'</attribute>
+            </xpath>
+            
+            <!-- Ensure notebook is visible when type is entry -->
+            <xpath expr="//notebook" position="attributes">
+                <attribute name="invisible">0</attribute>
+            </xpath>
+
+            <!-- Show journal_id for entries in the header area, after the entry number -->
+            <xpath expr="//h1[field[@name='name']]" position="after">
+                <group invisible="move_type != 'entry'">
+                    <field name="journal_id"
+                           placeholder="Journal"
+                           options="{'no_create': True, 'no_open': True}"
+                           readonly="state != 'draft'"/>
+                </group>
+            </xpath>
+
+            <!-- Make ref readonly after posting (missing in Odoo 18 CE entry form) -->
+            <xpath expr="//field[@name='ref'][@invisible=&quot;move_type in ('in_invoice', 'in_receipt', 'in_refund', 'out_invoice', 'out_refund')&quot;]" position="attributes">
+                <attribute name="readonly">state != 'draft'</attribute>
+            </xpath>
+
+            <!-- Make checked readonly after posting in Other Info tab -->
+            <xpath expr="//page[@id='other_tab_entry']//field[@name='checked']" position="attributes">
+                <attribute name="readonly">state != 'draft'</attribute>
+            </xpath>
+
+            <!-- Make company_id readonly after posting in Other Info tab -->
+            <xpath expr="//page[@id='other_tab_entry']//field[@name='company_id']" position="attributes">
+                <attribute name="readonly">state != 'draft'</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

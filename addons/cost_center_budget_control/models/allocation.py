@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from hashlib import sha1
 from psycopg2 import IntegrityError
 
 from odoo import models, fields, api, _
@@ -36,11 +37,17 @@ class BudgetAllocation(models.Model):
         tracking=True,
     )
 
+    line_ids = fields.One2many(
+        "budget.allocation.line",
+        "allocation_id",
+        string="Allocation Lines",
+    )
+
     allocation_rules = fields.Json(
         string="Allocation Rules",
-        help="JSON mapping of target Cost Center IDs to percentage (e.g. {'1': 50, '2': 50})",
-        required=True,
-        default=lambda: {},
+        compute="_compute_allocation_rules",
+        store=True,
+        default=dict,
     )
 
     amount_base = fields.Monetary(
@@ -135,41 +142,38 @@ class BudgetAllocation(models.Model):
             if rec.amount_base <= 0.0:
                 raise ValidationError(_("Base Amount must be strictly positive."))
 
+    @api.depends("line_ids", "line_ids.cost_center_id", "line_ids.percentage")
+    def _compute_allocation_rules(self):
+        for rec in self:
+            rules = {}
+            for line in rec.line_ids:
+                rules[str(line.cost_center_id.id)] = line.percentage
+            rec.allocation_rules = rules
+
     # -------------------------------------------------------------------------
     # CORE LOGIC
     # -------------------------------------------------------------------------
 
     def compute_allocation(self):
-        """Step 1: Validate and return per-target distribution data.
-
-        Returns a list of dicts:
-            [{'cost_center': record, 'percent': float, 'raw_amount': float}, ...]
-
-        Amounts here are raw (pre-rounding). Rounding is handled in
-        build_journal_lines to guarantee balanced debit/credit totals.
-        """
         self.ensure_one()
-        rules = self.allocation_rules
-        if not rules:
-            raise UserError(_("Allocation rules are not defined."))
+        if not self.line_ids:
+            raise UserError(_("Allocation lines are not defined."))
 
         allocation_data = []
         total_percent = 0.0
 
-        for cc_id_str, percent in rules.items():
-            cc_id = int(cc_id_str)
-            cost_center = self.env["cost.center"].browse(cc_id)
+        for line in self.line_ids:
+            cost_center = line.cost_center_id
             if not cost_center.exists():
                 continue
 
-            p_val = float(percent)
-            raw_amount = (p_val / 100.0) * self.amount_base
+            raw_amount = (line.percentage / 100.0) * self.amount_base
             allocation_data.append({
                 "cost_center": cost_center,
-                "percent": p_val,
+                "percent": line.percentage,
                 "raw_amount": raw_amount,
             })
-            total_percent += p_val
+            total_percent += line.percentage
 
         if abs(total_percent - 100.0) > 0.01:
             raise ValidationError(
@@ -177,7 +181,7 @@ class BudgetAllocation(models.Model):
             )
 
         if not allocation_data:
-            raise UserError(_("No valid target cost centers found in allocation rules."))
+            raise UserError(_("No valid target cost centers found in allocation lines."))
 
         return allocation_data
 
@@ -271,8 +275,12 @@ class BudgetAllocation(models.Model):
     def create_move(self, lines):
         """Step 3: Create account.move with idempotency check."""
         self.ensure_one()
+        rule_fingerprint = sha1(
+            repr(sorted((self.allocation_rules or {}).items())).encode()
+        ).hexdigest()[:10]
         deterministic_ref = (
-            f"ALLOC/{self.company_id.id}/{self.source_cost_center_id.id}/{self.allocation_date}"
+            f"ALLOC/{self.company_id.id}/{self.id}/{self.source_cost_center_id.id}/"
+            f"{self.allocation_date}/{rule_fingerprint}"
         )
 
         existing_move = self.env["account.move"].search([

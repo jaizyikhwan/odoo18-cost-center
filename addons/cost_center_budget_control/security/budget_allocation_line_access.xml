@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="access_budget_allocation_line_user" model="ir.model.access">
+            <field name="name">budget.allocation.line.user</field>
+            <field name="model_id" search="[('model', '=', 'budget.allocation.line')]"/>
+            <field name="group_id" ref="cost_center_budget_control.group_budget_user"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="access_budget_allocation_line_mgr" model="ir.model.access">
+            <field name="name">budget.allocation.line.mgr</field>
+            <field name="model_id" search="[('model', '=', 'budget.allocation.line')]"/>
+            <field name="group_id" ref="cost_center_budget_control.group_budget_manager"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+    </data>
+</odoo>

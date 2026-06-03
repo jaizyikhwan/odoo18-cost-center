@@ -6,78 +6,54 @@
         <field name="priority" eval="10"/>
         <field name="inherit_id" ref="account.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//app[@name='account']/div[@name='account_setting_container']" position="after">
-                <h2>Budget Control</h2>
-                <div class="row mt16 o_settings_container">
-                    <div class="col-12 col-lg-6 o_setting_box">
-                        <div class="o_setting_right_pane">
-                            <span class="o_form_label">Budget Control Activation</span>
-                            <div class="text-muted">
-                                Enable budget thresholds and control mechanisms.
-                            </div>
-                            <div class="content-group mt16">
-                                <div class="row mt16">
-                                    <label for="budget_control_enabled" class="o_light_label col-lg-4"/>
-                                    <field name="budget_control_enabled" help="Activate or deactivate all budget control functionalities."/>
-                                </div>
+            <xpath expr="//app[@name='account']" position="inside">
+                <block title="Budget Control" id="budget_control_settings">
+                    <setting string="Enable Budget Control" help="Activate or deactivate all budget control functionalities.">
+                        <field name="budget_control_enabled"/>
+                    </setting>
+                    <setting string="Control Mode" help="Choose how the system reacts when budgets exceed their thresholds." invisible="not budget_control_enabled">
+                        <div class="content-group">
+                            <div class="row">
+                                <label for="budget_control_mode" class="col-lg-3 o_light_label"/>
+                                <field name="budget_control_mode"/>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="budget_control_mode_setting" attrs="{'invisible': [('budget_control_enabled', '=', False)]}">
-                        <div class="o_setting_right_pane">
-                            <span class="o_form_label">Control Mode</span>
-                            <div class="text-muted">
-                                Define how the system reacts to budget overruns.
-                            </div>
-                            <div class="content-group mt16">
-                                <div class="row mt16">
-                                    <label for="budget_control_mode" class="o_light_label col-lg-4"/>
-                                    <field name="budget_control_mode" help="Choose how the system reacts when budgets exceed their thresholds."/>
-                                </div>
+                    </setting>
+                </block>
+                <block title="Budget Thresholds" id="budget_thresholds_settings" invisible="not budget_control_enabled">
+                    <setting string="Warning Threshold (%)" help="The percentage of budget usage that triggers a warning message.">
+                        <div class="content-group">
+                            <div class="row">
+                                <label for="budget_warning_threshold" class="col-lg-3 o_light_label"/>
+                                <field name="budget_warning_threshold"/>
                             </div>
                         </div>
-                    </div>
-                     <div class="col-12 col-lg-6 o_setting_box" id="budget_thresholds_settings" attrs="{'invisible': [('budget_control_enabled', '=', False)]}">
-                        <div class="o_setting_right_pane">
-                            <span class="o_form_label">Thresholds (%)</span>
-                            <div class="text-muted">
-                                Configure budget usage percentages for warnings, critical alerts, and blocking.
-                            </div>
-                            <div class="content-group mt16">
-                                <div class="row mt16">
-                                    <label for="budget_warning_threshold" class="o_light_label col-lg-4"/>
-                                    <field name="budget_warning_threshold" help="The percentage of budget usage that triggers a warning message."/>
-                                </div>
-                                <div class="row mt16">
-                                    <label for="budget_critical_threshold" class="o_light_label col-lg-4"/>
-                                    <field name="budget_critical_threshold" help="The percentage of budget usage that triggers a critical alert."/>
-                                </div>
-                                <div class="row mt16">
-                                    <label for="budget_blocking_threshold" class="o_light_label col-lg-4"/>
-                                    <field name="budget_blocking_threshold" help="The percentage of budget usage that blocks posting of an account move in 'Blocking' mode."/>
-                                </div>
+                    </setting>
+                    <setting string="Critical Threshold (%)" help="The percentage of budget usage that triggers a critical alert.">
+                        <div class="content-group">
+                            <div class="row">
+                                <label for="budget_critical_threshold" class="col-lg-3 o_light_label"/>
+                                <field name="budget_critical_threshold"/>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-12 col-lg-6 o_setting_box" id="budget_notification_settings" attrs="{'invisible': [('budget_control_enabled', '=', False)]}">
-                        <div class="o_setting_right_pane">
-                            <span class="o_form_label">Notification Settings</span>
-                            <div class="text-muted">
-                                Configure how budget alerts are communicated.
-                            </div>
-                            <div class="content-group mt16">
-                                <div class="row mt16">
-                                    <label for="budget_chatter_enabled" class="o_light_label col-lg-4"/>
-                                    <field name="budget_chatter_enabled" help="Display budget alerts in the chatter of related documents."/>
-                                </div>
-                                <div class="row mt16">
-                                    <label for="budget_activity_enabled" class="o_light_label col-lg-4"/>
-                                    <field name="budget_activity_enabled" help="Schedule activities for budget managers when critical thresholds are exceeded."/>
-                                </div>
+                    </setting>
+                    <setting string="Blocking Threshold (%)" help="The percentage of budget usage that blocks posting of an account move in 'Blocking' mode.">
+                        <div class="content-group">
+                            <div class="row">
+                                <label for="budget_blocking_threshold" class="col-lg-3 o_light_label"/>
+                                <field name="budget_blocking_threshold"/>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </setting>
+                </block>
+                <block title="Budget Notifications" id="budget_notification_settings" invisible="not budget_control_enabled">
+                    <setting string="Chatter Alerts" help="Display budget alerts in the chatter of related documents.">
+                        <field name="budget_chatter_enabled"/>
+                    </setting>
+                    <setting string="Activity Scheduling" help="Schedule activities for budget managers when critical thresholds are exceeded.">
+                        <field name="budget_activity_enabled"/>
+                    </setting>
+                </block>
             </xpath>
         </field>
     </record>

@@ -18,5 +18,11 @@
             <field name="model_id" ref="model_cost_center"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
         </record>
+
+        <record id="budget_allocation_comp_rule" model="ir.rule">
+            <field name="name">Budget Allocation multi-company</field>
+            <field name="model_id" ref="model_budget_allocation"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>

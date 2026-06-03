@@ -39,9 +39,8 @@ class BudgetPlan(models.Model):
         "res.company",
         string="Company",
         required=True,
-        related="cost_center_id.company_id",
-        store=True,
-        readonly=True
+        index=True,
+        default=lambda self: self.env.company,
     )
     currency_id = fields.Many2one(
         "res.currency",
@@ -80,6 +79,12 @@ class BudgetPlan(models.Model):
                 and rec.date_to >= today
             )
 
+    @api.onchange("cost_center_id")
+    def _onchange_cost_center_id(self):
+        for rec in self:
+            if rec.cost_center_id:
+                rec.company_id = rec.cost_center_id.company_id
+
     # -------------------------------------------------------------------------
     # CONSTRAINTS & ORM OVERRIDES
     # -------------------------------------------------------------------------
@@ -101,7 +106,7 @@ class BudgetPlan(models.Model):
                     ("date_from", "<=", rec.date_to),
                     ("date_to", ">=", rec.date_from),
                 ]
-                if self.search(overlap_domain, count=True):
+                if self.search_count(overlap_domain):
                     raise ValidationError(
                         _("An overlapping budget already exists for this Cost Center during the specified period.")
                     )
@@ -250,17 +255,28 @@ class BudgetPlanLine(models.Model):
     _description = "Budget Plan Line"
     _check_company_auto = True
 
+    _sql_constraints = [
+        (
+            'unique_plan_account',
+            'UNIQUE(plan_id, account_id)',
+            'A budget line already exists for this account in this budget plan.'
+        ),
+    ]
+
     @api.model
     def _get_impacted_budget_lines_from_move(self, move):
         """Return budget lines impacted by a posted move."""
         analytic_ids = set()
-        for line in move.line_ids.filtered(lambda l: l.company_id == move.company_id and l.parent_state == 'posted'):
+        account_ids = set()
+        for line in move.line_ids.filtered(lambda l: l.company_id == move.company_id):
             if line.analytic_distribution:
                 analytic_ids |= set(line.analytic_distribution.keys())
-            elif line.analytic_account_id:
+            elif "analytic_account_id" in line._fields and line.analytic_account_id:
                 analytic_ids.add(str(line.analytic_account_id.id))
+            if line.account_id:
+                account_ids.add(line.account_id.id)
 
-        if not analytic_ids:
+        if not analytic_ids or not account_ids:
             return self.browse()
 
         date = move.date
@@ -269,7 +285,7 @@ class BudgetPlanLine(models.Model):
             ('plan_id.date_from', '<=', date),
             ('plan_id.date_to', '>=', date),
             ('plan_id.cost_center_id.analytic_account_id', '!=', False),
-            ('account_id', '!=', False),
+            ('account_id', 'in', list(account_ids)),
         ]).filtered(lambda rec: str(rec.plan_id.cost_center_id.analytic_account_id.id) in analytic_ids)
 
     @api.model
@@ -277,8 +293,20 @@ class BudgetPlanLine(models.Model):
         """Recompute actual_amount for impacted budget lines."""
         if not lines:
             return
-        lines._compute_actual_amount()
-        lines.flush_recordset(["actual_amount"])
+        protected_lines = lines.with_context(bypass_protection=True)
+        protected_lines._compute_actual_amount()
+        protected_lines._compute_variance_amount()
+        protected_lines._compute_remaining_amount()
+        protected_lines._compute_usage_percent()
+        protected_lines._compute_alert_level()
+        for line in protected_lines:
+            line.write({
+                'actual_amount': line.actual_amount,
+                'variance_amount': line.variance_amount,
+                'remaining_amount': line.remaining_amount,
+                'usage_percent': line.usage_percent,
+                'alert_level': line.alert_level,
+            })
 
     plan_id = fields.Many2one(
         "budget.plan",
@@ -363,12 +391,7 @@ class BudgetPlanLine(models.Model):
         "account_id",
     )
     def _compute_actual_amount(self):
-        """Compute actual amount supporting analytic_distribution (JSONB) and legacy analytic_account_id.
-
-        Uses parameterized raw SQL aggregation for weighted sums on analytic_distribution.
-        Falls back to legacy analytic_account_id only when distribution is empty.
-        This method is pure and has no side effects; recompute orchestration is external.
-        """
+        """Compute actual amount using Odoo 18 analytic_distribution (JSONB)."""
         for rec in self:
             if not all([rec.plan_id, rec.account_id]):
                 rec.actual_amount = 0.0
@@ -405,32 +428,29 @@ class BudgetPlanLine(models.Model):
             self.env.cr.execute(sql_weighted, params)
             weighted_sum = self.env.cr.fetchone()[0] or 0.0
 
-            if float(weighted_sum) != 0.0:
-                rec.actual_amount = float_round(weighted_sum, precision_digits=rec.currency_id.decimal_places)
-                continue
+            if "analytic_account_id" in self.env["account.move.line"]._fields:
+                sql_fallback = (
+                    "SELECT COALESCE(SUM((l.balance)::numeric), 0.0) "
+                    "FROM account_move_line l "
+                    "WHERE l.account_id = %s "
+                    "AND l.company_id = %s "
+                    "AND l.parent_state = 'posted' "
+                    "AND l.date >= %s "
+                    "AND l.date <= %s "
+                    "AND l.analytic_account_id = %s "
+                    "AND (l.analytic_distribution IS NULL OR l.analytic_distribution = '{}'::jsonb)"
+                )
+                params_fb = (
+                    rec.account_id.id,
+                    rec.company_id.id,
+                    plan.date_from,
+                    plan.date_to,
+                    analytic_account.id,
+                )
+                self.env.cr.execute(sql_fallback, params_fb)
+                weighted_sum += self.env.cr.fetchone()[0] or 0.0
 
-            # Fallback: legacy analytic_account_id for lines without analytic_distribution
-            sql_fallback = (
-                "SELECT COALESCE(SUM((l.balance)::numeric), 0.0) "
-                "FROM account_move_line l "
-                "WHERE l.account_id = %s "
-                "AND l.company_id = %s "
-                "AND l.parent_state = 'posted' "
-                "AND l.date >= %s "
-                "AND l.date <= %s "
-                "AND l.analytic_account_id = %s "
-                "AND (l.analytic_distribution IS NULL OR l.analytic_distribution = '{}'::jsonb)"
-            )
-            params_fb = (
-                rec.account_id.id,
-                rec.company_id.id,
-                plan.date_from,
-                plan.date_to,
-                analytic_account.id,
-            )
-            self.env.cr.execute(sql_fallback, params_fb)
-            fallback_sum = self.env.cr.fetchone()[0] or 0.0
-            rec.actual_amount = float_round(fallback_sum, precision_digits=rec.currency_id.decimal_places)
+            rec.actual_amount = float_round(weighted_sum, precision_digits=rec.currency_id.decimal_places)
 
     @api.depends("planned_amount", "actual_amount")
     def _compute_variance_amount(self):
@@ -445,7 +465,7 @@ class BudgetPlanLine(models.Model):
     @api.depends("planned_amount", "actual_amount")
     def _compute_usage_percent(self):
         for rec in self:
-            if rec.planned_amount:
+            if rec.planned_amount and rec.planned_amount > 0:
                 rec.usage_percent = (rec.actual_amount / rec.planned_amount) * 100
             else:
                 rec.usage_percent = 0.0
@@ -465,6 +485,16 @@ class BudgetPlanLine(models.Model):
 
     def write(self, vals):
         if self.env.context.get('bypass_protection'):
+            return super().write(vals)
+
+        system_computed_fields = {
+            "actual_amount",
+            "variance_amount",
+            "remaining_amount",
+            "usage_percent",
+            "alert_level",
+        }
+        if vals and set(vals).issubset(system_computed_fields):
             return super().write(vals)
 
         for rec in self:

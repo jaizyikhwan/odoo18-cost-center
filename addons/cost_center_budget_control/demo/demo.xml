@@ -1,10 +1,17 @@
 <odoo>
     <data noupdate="1">
+        <!-- Demo Company (must be defined first) -->
+        <record id="demo_company" model="res.company">
+            <field name="name">Demo Company for Budget</field>
+            <field name="currency_id" ref="base.USD"/>
+        </record>
+
         <!-- Demo Users -->
         <record id="demo_budget_user" model="res.users">
             <field name="name">Demo Budget User</field>
             <field name="login">demouser</field>
             <field name="password">demouser</field>
+            <field name="company_ids" eval="[(4, ref('demo_company'))]"/>
             <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_user'))]"/>
         </record>
 
@@ -12,19 +19,15 @@
             <field name="name">Demo Budget Manager</field>
             <field name="login">demomanager</field>
             <field name="password">demomanager</field>
+            <field name="company_ids" eval="[(4, ref('demo_company'))]"/>
             <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_manager')),
                                        (4, ref('cost_center_budget_control.group_budget_override_manager'))]"/>
         </record>
 
-        <!-- Demo Company -->
-        <record id="demo_company" model="res.company">
-            <field name="name">Demo Company for Budget</field>
-            <field name="currency_id" ref="base.USD"/>
-        </record>
-
         <!-- Demo Analytic Account -->
-        <record id="analytic_account_sales_demo" model="account.analytic.account">
+        <record id="analytic_account_sales_dept_demo" model="account.analytic.account">
             <field name="name">Sales Department AA</field>
+            <field name="plan_id" ref="analytic.analytic_plan_departments"/>
             <field name="company_id" ref="demo_company"/>
         </record>
 
@@ -33,7 +36,7 @@
             <field name="name">Sales Department</field>
             <field name="code">SALES</field>
             <field name="company_id" ref="demo_company"/>
-            <field name="analytic_account_id" ref="analytic_account_sales_dept_demo"/>
+            <field name="analytic_account_id" ref="cost_center_budget_control.analytic_account_sales_dept_demo"/>
             <field name="responsible_id" ref="demo_budget_manager"/>
         </record>
 
@@ -62,11 +65,6 @@
             <field name="state">approved</field>
             <field name="approved_by" ref="base.user_admin"/>
             <field name="approved_date" eval="(DateTime.now() - relativedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')"/>
-            <field name="line_ids" eval="[(0,0, {
-                'account_id': ref('account_expenses_general_demo'),
-                'name': 'Marketing Expenses',
-                'planned_amount': 1000.0,
-            })]"/>
         </record>
         
         <!-- Demo Budget Plan Line - will be over budget -->
@@ -81,8 +79,6 @@
         <record id="allocation_q1_sales_demo" model="budget.allocation">
             <field name="name">Q1 Marketing Overhead Allocation</field>
             <field name="source_cost_center_id" ref="cost_center_sales_dept_demo"/>
-            <field name="target_cost_center_ids" eval="[(4, ref('cost_center_sales_dept_demo'))]"/>
-            <field name="allocation_rules" eval="{'%s' % ref('cost_center_sales_dept_demo'): 100.0}"/>
             <field name="amount_base">600.0</field>
             <field name="allocation_date">2026-02-15</field>
             <field name="overhead_account_id" ref="account_expenses_general_demo"/>
@@ -90,6 +86,13 @@
             <field name="journal_id" ref="journal_misc_demo"/>
             <field name="company_id" ref="demo_company"/>
             <field name="state">posted</field>
+        </record>
+
+        <!-- Demo Allocation Line -->
+        <record id="allocation_line_q1_sales_demo" model="budget.allocation.line">
+            <field name="allocation_id" ref="allocation_q1_sales_demo"/>
+            <field name="cost_center_id" ref="cost_center_sales_dept_demo"/>
+            <field name="percentage">100.0</field>
         </record>
         
         <!-- Simulate an over-budget transaction for 'Sales Team Travel' -->
@@ -104,7 +107,7 @@
                         'account_id': ref('account_expenses_general_demo'),
                         'debit': 600.0,
                         'credit': 0.0,
-                        'analytic_distribution': {str(ref('analytic_account_sales_dept_demo')): 100.0}
+                        'analytic_distribution': {str(ref('cost_center_budget_control.analytic_account_sales_dept_demo')): 100.0}
                     }),
                     (0, 0, {
                         'account_id': ref('account_expenses_general_demo'),
@@ -114,7 +117,6 @@
                 ],
             }]"/>
         </function>
-
 
         <!-- Budget Control Settings for Demo -->
         <record id="ir_config_parameter_budget_enabled_demo" model="ir.config_parameter">

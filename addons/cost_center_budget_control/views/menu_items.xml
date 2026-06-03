@@ -1,10 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Action for Cost Center -->
+    <record id="action_cost_center" model="ir.actions.act_window">
+        <field name="name">Cost Centers</field>
+        <field name="res_model">cost.center</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_cost_center_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No cost centers found.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action for Journal Entries (manual entry for budget testing) -->
+    <record id="action_custom_journal_entries" model="ir.actions.act_window">
+        <field name="name">Journal Entries</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('move_type', '=', 'entry')]</field>
+        <field name="context">{'default_move_type': 'entry'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first manual journal entry for budget testing.
+            </p>
+        </field>
+    </record>
+
     <!-- Menu Root -->
-        <menuitem id="menu_cost_center_root"
-                  name="Cost Center &amp; Budget Control"
-                  sequence="100"/>
+    <menuitem id="menu_cost_center_root"
+              name="Cost Center &amp; Budget Control"
+              sequence="100"/>
 
     <!-- Menu for Cost Centers -->
     <menuitem id="menu_cost_center_costcenter"
@@ -13,6 +40,13 @@
               action="action_cost_center"
               sequence="10"/>
 
+    <!-- Menu for Journal Entries -->
+    <menuitem id="menu_cost_center_journal_entry"
+              name="Journal Entries"
+              parent="menu_cost_center_root"
+              action="action_custom_journal_entries"
+              sequence="15"/>
+
     <!-- Menu for Budget Plans -->
     <menuitem id="menu_cost_center_budget_plan"
               name="Budget Plans"
@@ -20,17 +54,18 @@
               action="action_budget_plan"
               sequence="20"/>
 
+    <!-- Menu for Budget Allocations -->
+    <menuitem id="menu_cost_center_budget_allocation"
+              name="Budget Allocations"
+              parent="menu_cost_center_root"
+              action="action_budget_allocation"
+              sequence="25"/>
+
     <!-- Reporting -->
     <menuitem id="menu_cost_center_reporting_root"
               name="Reporting"
               parent="menu_cost_center_root"
               sequence="30"/>
-
-    <menuitem id="menu_cost_center_reporting_dashboard"
-              name="Dashboard"
-              parent="menu_cost_center_reporting_root"
-              action="action_budget_reporting_dashboard"
-              sequence="1"/>
 
     <menuitem id="menu_cost_center_reporting_budget_analysis"
               name="Budget Analysis"
@@ -49,18 +84,5 @@
               parent="menu_cost_center_reporting_root"
               action="action_allocation_analysis"
               sequence="30"/>
-
-    <!-- Action for Cost Center -->
-    <record id="action_cost_center" model="ir.actions.act_window">
-        <field name="name">Cost Centers</field>
-        <field name="res_model">cost.center</field>
-        <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_cost_center_search"/>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                No cost centers found.
-            </p>
-        </field>
-    </record>
 
 </odoo>
