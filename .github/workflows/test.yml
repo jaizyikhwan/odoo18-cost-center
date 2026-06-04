@@ -1,0 +1,91 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+defaults:
+  run:
+    working-directory: ./addons/cost_center_budget_control
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGPASSWORD: odoo
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxml2-dev libxslt1-dev libldap2-dev libsasl2-dev libssl-dev libpq-dev build-essential wkhtmltopdf
+
+      - name: Install Odoo 18 dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r https://raw.githubusercontent.com/odoo/odoo/18.0/requirements.txt
+          pip install phonenumbers
+
+      - name: Install Odoo 18
+        run: |
+          git clone --depth=1 --branch=18.0 https://github.com/odoo/odoo.git /tmp/odoo
+          pip install -e /tmp/odoo
+
+      - name: Link module into Odoo addons path
+        run: |
+          sudo mkdir -p /opt/odoo/addons
+          sudo ln -s "$GITHUB_WORKSPACE/addons/cost_center_budget_control" /opt/odoo/addons/cost_center_budget_control
+
+      - name: Run module tests
+        run: |
+          odoo --version
+          odoo -d postgres \
+               --db_host=localhost \
+               --db_port=5432 \
+               --db_user=odoo \
+               --db_password=odoo \
+               --addons-path=/tmp/odoo/addons,/opt/odoo/addons \
+               --test-enable \
+               --test-tags=/cost_center_budget_control \
+               -i cost_center_budget_control \
+               --stop-after-init \
+               --no-http \
+               --log-level=info 2>&1 | tee /tmp/odoo-test.log
+
+      - name: Upload test log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: odoo-test-log
+          path: /tmp/odoo-test.log

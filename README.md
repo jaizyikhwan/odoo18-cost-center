@@ -1,5 +1,10 @@
 # Cost Center & Budget Control
 
+[![Tests](https://github.com/jaizyikhwan/odoo18-cost-center/actions/workflows/test.yml/badge.svg)](https://github.com/jaizyikhwan/odoo18-cost-center/actions/workflows/test.yml)
+[![Odoo 18 CE](https://img.shields.io/badge/Odoo-18.0-714B67.svg)](https://www.odoo.com/documentation/18.0/)
+[![License: LGPL-3](https://img.shields.io/badge/License-LGPL--3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![OCA-style](https://img.shields.io/badge/structure-OCA%20style-714B67.svg)](https://odoo-community.org/)
+
 An Odoo 18 Community Edition module for cost center hierarchy management, budget control validation, and department-level cost allocation.
 
 ---
@@ -167,23 +172,40 @@ odoo-cost-center/
 
 ---
 
-## Screenshots & Demonstration Placeholders
+## Screenshots
 
-### 1. Budget Plan Form
-*Demonstrates state transition actions, real-time variance tracking progress bars, and reactive danger alerts on lines.*
-![Budget Plan Form Placeholder](https://via.placeholder.com/800x400?text=Budget+Plan+Form+View+-+Approved+State)
+Screenshots will be added under `addons/cost_center_budget_control/static/img/`. The following are placeholder paths:
 
-### 2. Allocation Configuration
-*Demonstrates pool source setup, target percentage allocations, and the generated balanced journal entries.*
-![Allocation Settings Placeholder](https://via.placeholder.com/800x400?text=Allocation+Setup+and+Journal+Reference+Generation)
+### 1. Cost Center Form
+*Hierarchical cost center with parent-child relationship, code, manager, and analytic account.*
+![Cost Center Form](addons/cost_center_budget_control/static/img/01_cost_center_form.png)
 
-### 3. Threshold Blocking Validation
-*Demonstrates user interface error dialog preventing an over-budget transaction posting, offering options for Override Manager credentials.*
-![Threshold Validation Placeholder](https://via.placeholder.com/800x400?text=Overspending+Blocked+Dialog+-+Override+Required)
+### 2. Budget Plan Form
+*State transition actions, real-time variance tracking progress bars, and reactive danger alerts on lines.*
+![Budget Plan Form](addons/cost_center_budget_control/static/img/02_budget_plan_form.png)
 
-### 4. Analytical Pivot & Reporting
-*Demonstrates pivot grid comparing budget limits with live expenditures across cost center hierarchies.*
-![Analytical Pivot Placeholder](https://via.placeholder.com/800x400?text=Pivot+Analysis+-+Actual+vs+Planned+Variance)
+### 3. Allocation Form
+*Pool source setup, target percentage allocations, and the generated balanced journal entries.*
+![Allocation Form](addons/cost_center_budget_control/static/img/03_allocation_form.png)
+
+### 4. Budget Variance Report
+*QWeb PDF report showing planned vs actual variance per cost center with status indicators.*
+![Budget Variance Report](addons/cost_center_budget_control/static/img/04_variance_report.png)
+
+---
+
+## Without vs With This Module
+
+| Aspect | Without Module | With Module |
+|---|---|---|
+| **Budget detection** | Realized only in retroactive reports (month-end) | Real-time, during `_post` of every `account.move` |
+| **Override governance** | Anyone with Accounting access can post | Group-based: requires `group_budget_override_manager` |
+| **Cost allocation** | Manual journal entries with rounding errors | Programmatic, perfectly balanced, idempotent references |
+| **Multi-company safety** | Manual filtering by accountant | Enforced at ORM layer (`_check_company_auto` + record rules) |
+| **State discipline** | Budget plans freely editable | Locked at `approved` / `closed` / `cancelled` |
+| **Threshold thresholds** | Fixed at 70/90/100 | Configurable via Settings UI |
+| **Notification** | Manual review | Chatter warnings, activity scheduling, mail templates |
+| **Reporting** | Generic pivot | Dedicated Reporting menu with optimized SQL aggregations |
 
 ---
 
