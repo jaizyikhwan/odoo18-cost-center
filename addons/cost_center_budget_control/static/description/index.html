@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cost Center &amp; Budget Control</title>
+<style>
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #333;
+    max-width: 920px;
+    margin: 24px auto;
+    padding: 0 16px;
+    line-height: 1.5;
+}
+h1, h2, h3 { color: #714B67; }
+h1 { font-size: 28px; border-bottom: 2px solid #714B67; padding-bottom: 8px; }
+h2 { font-size: 22px; margin-top: 32px; }
+h3 { font-size: 18px; margin-top: 24px; }
+a { color: #714B67; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.feature-list { columns: 2; -webkit-columns: 2; -moz-columns: 2; }
+.feature-list li { margin: 4px 0; }
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #714B67;
+    color: white;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-right: 4px;
+}
+pre {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+code { background: #f5f5f5; padding: 1px 4px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<h1>Cost Center &amp; Budget Control</h1>
+
+<p>
+    <span class="badge">Odoo 18 CE</span>
+    <span class="badge">LGPL-3</span>
+    <span class="badge">OCA-style</span>
+    <span class="badge">v18.0.1.0.0</span>
+</p>
+
+<p>
+Enterprise-grade cost center hierarchy management, workflow-driven budget
+planning, real-time budget utilization tracking, and proactive threshold
+control &mdash; built specifically for Odoo 18 Community Edition following
+OCA structural conventions.
+</p>
+
+<h2>Why this module?</h2>
+
+<p>
+Standard Odoo analytic accounting excels at cost tracking but lacks native
+mechanisms to enforce <strong>department-level budget limits</strong> before
+overspending occurs. Managers are forced to rely on retroactive reports that
+only highlight overruns <em>after</em> transactions are posted.
+</p>
+
+<p>
+This module fills that gap by validating transactions in real time during
+the posting workflow &mdash; checking projected expenditures against
+approved departmental budgets <strong>before</strong> finalizing entries.
+</p>
+
+<h2>Key Features</h2>
+
+<ul class="feature-list">
+    <li>Hierarchical cost centers (parent-child)</li>
+    <li>Workflow-driven budget plans (state machine)</li>
+    <li>Real-time <code>actual_amount</code> aggregation (JSONB SQL)</li>
+    <li>Programmatic overhead allocation engine</li>
+    <li>Balanced journal entry generation</li>
+    <li>Idempotent allocation references</li>
+    <li>Configurable threshold validation (70/90/100%)</li>
+    <li>Role-based budget override controls</li>
+    <li>Multi-company isolation (record rules)</li>
+    <li>Analytic distribution integration</li>
+    <li>Database indexes (incl. GIN on JSONB)</li>
+    <li>Pivot / graph reporting views</li>
+</ul>
+
+<h2>Architecture Pillars</h2>
+
+<h3>1. Workflow Discipline</h3>
+<p>
+Budget plans follow a strict state machine: <code>Draft &rarr; Submitted
+&rarr; Approved &rarr; Closed / Cancelled</code>. Approved plans are
+locked against modifications to protect historical records.
+</p>
+
+<h3>2. Ledger Accuracy</h3>
+<p>
+Programmatic journal entries are perfectly balanced. Rounding residuals are
+absorbed by the final target line. Idempotency is enforced at the database
+level via deterministic reference keys.
+</p>
+
+<h3>3. Multi-Company Safety</h3>
+<p>
+Every model declares <code>_check_company_auto = True</code> at the module
+level. Cross-company accounting references are blocked at the ORM layer.
+</p>
+
+<h3>4. Performance-Aware Aggregation</h3>
+<p>
+<code>actual_amount</code> aggregation uses parameterized JSONB queries
+against <code>account_move_line.analytic_distribution</code> with a
+custom GIN index installed via <code>post_init_hook</code>.
+</p>
+
+<h2>Technical Stack</h2>
+
+<ul>
+    <li>Odoo 18.0 Community Edition</li>
+    <li>PostgreSQL 16 (JSONB queries + GIN indexing)</li>
+    <li>Python 3.11+</li>
+    <li>OCA-style module structure</li>
+</ul>
+
+<h2>Installation</h2>
+
+<pre><code>git clone https://github.com/jaizyikhwan/odoo18-cost-center.git
+cd odoo18-cost-center
+docker compose up -d</code></pre>
+
+<p>
+After Odoo initializes, install <strong>Cost Center &amp; Budget Control</strong>
+from the Apps dashboard. The mounted <code>addons/</code> volume allows
+real-time local file changes to be reflected immediately on upgrade.
+</p>
+
+<h2>Documentation</h2>
+
+<ul>
+    <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/README.md">Full README</a></li>
+    <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/readme/USAGE.md">Usage Guide</a></li>
+    <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/readme/ROADMAP.md">Roadmap</a></li>
+</ul>
+
+<h2>Credits</h2>
+
+<p>
+Author: <a href="https://github.com/jaizyikhwan">Muhammad Ikhwan Jaizy</a><br>
+License: LGPL-3
+</p>
+
+</body>
+</html>

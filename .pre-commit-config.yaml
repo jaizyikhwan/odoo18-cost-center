@@ -1,0 +1,39 @@
+exclude: |
+  (?x)^(
+    addons/cost_center_budget_control/static/description/index\.html
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        files: \.(py|xml|md|yaml|yml)$
+      - id: end-of-file-fixer
+        files: \.(py|xml|md|yaml|yml)$
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-xml
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^addons/.*\.py$
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        args: [--line-length=120, --target-version=py311]
+        files: ^addons/.*\.py$
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=120]
+        files: ^addons/.*\.py$
