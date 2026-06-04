@@ -1,7 +1,10 @@
+import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_round
 from datetime import date
+
+_logger = logging.getLogger(__name__)
 
 
 class BudgetPlan(models.Model):
@@ -270,9 +273,9 @@ class BudgetPlanLine(models.Model):
         account_ids = set()
         for line in move.line_ids.filtered(lambda l: l.company_id == move.company_id):
             if line.analytic_distribution:
-                analytic_ids |= set(line.analytic_distribution.keys())
+                analytic_ids |= {int(aid) for aid in line.analytic_distribution.keys() if aid.isdigit()}
             elif "analytic_account_id" in line._fields and line.analytic_account_id:
-                analytic_ids.add(str(line.analytic_account_id.id))
+                analytic_ids.add(line.analytic_account_id.id)
             if line.account_id:
                 account_ids.add(line.account_id.id)
 
@@ -284,29 +287,27 @@ class BudgetPlanLine(models.Model):
             ('company_id', '=', move.company_id.id),
             ('plan_id.date_from', '<=', date),
             ('plan_id.date_to', '>=', date),
-            ('plan_id.cost_center_id.analytic_account_id', '!=', False),
+            ('plan_id.cost_center_id.analytic_account_id', 'in', list(analytic_ids)),
             ('account_id', 'in', list(account_ids)),
-        ]).filtered(lambda rec: str(rec.plan_id.cost_center_id.analytic_account_id.id) in analytic_ids)
+        ])
 
     @api.model
     def _recompute_actual_amount_batch(self, lines):
-        """Recompute actual_amount for impacted budget lines."""
+        """Recompute actual_amount for impacted budget lines.
+
+        Computed fields with store=True are automatically persisted by the ORM
+        on flush, so explicit write() calls are unnecessary. Triggering the
+        compute methods here is enough.
+        """
         if not lines:
             return
         protected_lines = lines.with_context(bypass_protection=True)
+        protected_lines.invalidate_recordset()
         protected_lines._compute_actual_amount()
         protected_lines._compute_variance_amount()
         protected_lines._compute_remaining_amount()
         protected_lines._compute_usage_percent()
         protected_lines._compute_alert_level()
-        for line in protected_lines:
-            line.write({
-                'actual_amount': line.actual_amount,
-                'variance_amount': line.variance_amount,
-                'remaining_amount': line.remaining_amount,
-                'usage_percent': line.usage_percent,
-                'alert_level': line.alert_level,
-            })
 
     plan_id = fields.Many2one(
         "budget.plan",
@@ -472,13 +473,17 @@ class BudgetPlanLine(models.Model):
 
     @api.depends("usage_percent")
     def _compute_alert_level(self):
+        get_param = self.env["ir.config_parameter"].sudo().get_param
+        warning_thr = float(get_param("cost_center_budget_control.warning_threshold", "70"))
+        critical_thr = float(get_param("cost_center_budget_control.critical_threshold", "90"))
+        blocking_thr = float(get_param("cost_center_budget_control.blocking_threshold", "100"))
         for rec in self:
             pct = rec.usage_percent
-            if pct >= 100.0:
+            if pct >= blocking_thr:
                 rec.alert_level = "exceeded"
-            elif pct >= 90.0:
+            elif pct >= critical_thr:
                 rec.alert_level = "danger"
-            elif pct >= 70.0:
+            elif pct >= warning_thr:
                 rec.alert_level = "warning"
             else:
                 rec.alert_level = "normal"

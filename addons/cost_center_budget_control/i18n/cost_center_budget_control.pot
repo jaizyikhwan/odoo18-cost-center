@@ -1,0 +1,1554 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* cost_center_budget_control
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0-20260421\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-04 04:53+0000\n"
+"PO-Revision-Date: 2026-06-04 04:53+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: cost_center_budget_control
+#: model:mail.template,body_html:cost_center_budget_control.mail_template_budget_over_budget
+msgid ""
+"<div style=\"font-family: Arial, sans-serif; padding: 20px; color: #333;\">\n"
+"    <h2 style=\"color: #714B67;\">Budget Threshold Exceeded</h2>\n"
+"\n"
+"    <p>Hello,</p>\n"
+"\n"
+"    <p>\n"
+"        The following budget line has exceeded its threshold and requires your attention:\n"
+"    </p>\n"
+"\n"
+"    <table style=\"border-collapse: collapse; margin: 16px 0; width: 100%;\">\n"
+"        <tr style=\"background-color: #f5f5f5;\">\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Cost Center</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">\n"
+"                {{ object.plan_id.cost_center_id.code }} — {{ object.plan_id.cost_center_id.name }}\n"
+"            </td>\n"
+"        </tr>\n"
+"        <tr>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Budget Plan</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">{{ object.plan_id.name }}</td>\n"
+"        </tr>\n"
+"        <tr style=\"background-color: #f5f5f5;\">\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Account</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">\n"
+"                {{ object.account_id.code }} — {{ object.account_id.name }}\n"
+"            </td>\n"
+"        </tr>\n"
+"        <tr>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Period</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">\n"
+"                {{ object.plan_id.date_from }} to {{ object.plan_id.date_to }}\n"
+"            </td>\n"
+"        </tr>\n"
+"        <tr style=\"background-color: #f5f5f5;\">\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Planned Amount</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">\n"
+"                {{ format_amount(object.planned_amount, object.currency_id) }}\n"
+"            </td>\n"
+"        </tr>\n"
+"        <tr>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Actual Amount</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">\n"
+"                {{ format_amount(object.actual_amount, object.currency_id) }}\n"
+"            </td>\n"
+"        </tr>\n"
+"        <tr style=\"background-color: #f5f5f5;\">\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Usage</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd; color: #dc3545; font-weight: bold;\">\n"
+"                {{ \"%.1f\"|format(object.usage_percent) }}%\n"
+"            </td>\n"
+"        </tr>\n"
+"        <tr>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\"><strong>Alert Level</strong></td>\n"
+"            <td style=\"padding: 8px; border: 1px solid #ddd;\">\n"
+"                <span style=\"background-color: #dc3545; color: white; padding: 2px 8px; border-radius: 3px;\">\n"
+"                    {{ object.alert_level }}\n"
+"                </span>\n"
+"            </td>\n"
+"        </tr>\n"
+"    </table>\n"
+"\n"
+"    <p>\n"
+"        Please review this budget and take appropriate action. You can:\n"
+"    </p>\n"
+"    <ul>\n"
+"        <li>Adjust the planned amount if the budget was set too low</li>\n"
+"        <li>Investigate the source of over-expenditure</li>\n"
+"        <li>Cancel or close the budget if it's no longer relevant</li>\n"
+"    </ul>\n"
+"\n"
+"    <p style=\"margin-top: 24px;\">\n"
+"        <a href=\"%7B%7B%20object.get_base_url()%20%7D%7D/web#id=%7B%7B%20object.id%20%7D%7D&amp;view_type=form&amp;model=budget.plan.line\" style=\"background-color: #714B67; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px;\">\n"
+"            View Budget Line\n"
+"        </a>\n"
+"    </p>\n"
+"\n"
+"    <p style=\"color: #666; font-size: 12px; margin-top: 32px;\">\n"
+"        This is an automated notification from the Cost Center &amp; Budget Control module.\n"
+"    </p>\n"
+"</div>\n"
+"        "
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "<span class=\"o_stat_text\">Chart of Accounts</span>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Active:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Approved by:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Company:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Cost Center:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Currency:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Period:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "<strong>Status:</strong>"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.constraint,message:cost_center_budget_control.constraint_budget_plan_line_unique_plan_account
+msgid "A budget line already exists for this account in this budget plan."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__account_id
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Account"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__overhead_account_id
+msgid "Account to be credited (Source pool)."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__target_account_id
+msgid "Account to be debited for target cost centers."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__action_type
+msgid "Action"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_needaction
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_needaction
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_needaction
+msgid "Action Needed"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Activate or deactivate all budget control functionalities."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__active
+msgid "Active"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_ids
+msgid "Activities"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_exception_decoration
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_exception_decoration
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Activity Scheduling"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_state
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_state
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_state
+msgid "Activity State"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_type_icon
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_type_icon
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_type_icon
+msgid "Activity Type Icon"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_graph
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_pivot
+msgid "Actual"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__actual_amount
+msgid "Actual Amount"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__alert_level
+msgid "Alert Level"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Alert: Danger"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Alert: Exceeded"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Alert: Warning"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+msgid "Allocate"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "Allocated Overhead: %s"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__allocation_id
+msgid "Allocation"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_allocation_analysis
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_reporting_allocation_analysis
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_reporting_pivot
+msgid "Allocation Analysis"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__allocation_date
+msgid "Allocation Date"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_reporting_graph
+msgid "Allocation Graphs"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_budget_allocation_line
+msgid "Allocation Line"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__line_ids
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+msgid "Allocation Lines"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "Allocation Pool: %s"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__allocation_rules
+msgid "Allocation Rules"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "Allocation lines are not defined."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "Allocation percentages must sum to 100%%. Current total: %s%%"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid ""
+"An overlapping budget already exists for this Cost Center during the "
+"specified period."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_account_analytic_account
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__analytic_account_id
+msgid "Analytic Account"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_approval_wizard_form
+msgid "Apply"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_approval_wizard__action_type__approve
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Approve"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan__state__approved
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Approved"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__approved_by
+msgid "Approved By"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__approved_date
+msgid "Approved Date"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Approved Plans"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Archived"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_attachment_count
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_attachment_count
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_attachment_count
+msgid "Attachment Count"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_pivot
+msgid "Avg Usage %"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__amount_base
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_reporting_graph
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_reporting_pivot
+msgid "Base Amount"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "Base Amount must be strictly positive."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__res_config_settings__budget_control_mode__blocking
+msgid "Blocking"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_blocking_threshold
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Blocking Threshold (%)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+msgid "Budget Allocation"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_budget_allocation
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_budget_allocation
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_list
+msgid "Budget Allocations"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_budget_analysis
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_reporting_budget_analysis
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_pivot
+msgid "Budget Analysis"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_budget_approval_wizard
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_approval_wizard_form
+msgid "Budget Approval"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_budget_approval_wizard
+msgid "Budget Approval Wizard"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Budget Control"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/account_move.py:0
+msgid ""
+"Budget Control BLOCKED: The following budgets would exceed their blocking threshold:\n"
+"%s\n"
+"\n"
+"Contact a Budget Override Manager to request an exception."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_control_mode
+msgid "Budget Control Mode"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_budget_graphs
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_reporting_budget_graphs
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_graph
+msgid "Budget Graphs"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__line_ids
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Budget Lines"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Budget Lines Analysis"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:res.groups,name:cost_center_budget_control.group_budget_manager
+msgid "Budget Manager"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Budget Notifications"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/account_move.py:0
+msgid "Budget OVERRIDE applied for %s (usage %.1f%% exceeds threshold %s%%)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:res.groups,name:cost_center_budget_control.group_budget_override_manager
+msgid "Budget Override Manager"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/account_move.py:0
+msgid "Budget Override Required: %s"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_budget_plan
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__plan_id
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Budget Plan"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_budget_plan_line
+msgid "Budget Plan Line"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Budget Plan Search"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/wizard/budget_approval_wizard.py:0
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_budget_plan
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__plan_ids
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_budget_plan
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_list
+msgid "Budget Plans"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Budget Thresholds"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:res.groups,name:cost_center_budget_control.group_budget_user
+msgid "Budget User"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.report,name:cost_center_budget_control.action_budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "Budget Variance Report"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/account_move.py:0
+msgid ""
+"Budget WARNING for %s: projected usage %.1f%% exceeds warning threshold %s%%"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Budget approved by %s."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Budget cancelled."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Budget closed."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Budget reset to draft."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Budget submitted for approval."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:mail.template,name:cost_center_budget_control.mail_template_budget_over_budget
+msgid "Budget: Over-Budget Notification"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_approval_wizard__action_type__cancel
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_approval_wizard_form
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Cancel"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_allocation__state__cancelled
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan__state__cancelled
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Cancelled"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/wizard/budget_approval_wizard.py:0
+msgid "Cancelled: %s"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Cannot cancel a closed or already cancelled budget."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Cannot close a budget that is already closed or cancelled."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Cannot delete a budget line that is not in Draft state."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid ""
+"Cannot modify a budget line that is in Approved, Closed or Cancelled state."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Cannot modify a budget that is in %s state."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Chatter Alerts"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__child_ids
+msgid "Children"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Choose how the system reacts when budgets exceed their thresholds."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Close"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan__state__closed
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Closed"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__code
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Code"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__comment
+msgid "Comment"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__company_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__company_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__company_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__company_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__company_id
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Company"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_res_config_settings
+msgid "Config Settings"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Control Mode"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_cost_center
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_account_analytic_account__cost_center_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__cost_center_id
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_form
+msgid "Cost Center"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.module.category,name:cost_center_budget_control.module_category_cost_center_budget
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_root
+msgid "Cost Center & Budget Control"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Cost Center Search"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_cost_center
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_costcenter
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_list
+msgid "Cost Centers"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.actions.act_window,help:cost_center_budget_control.action_budget_plan
+msgid "Create your first budget plan."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.actions.act_window,help:cost_center_budget_control.action_custom_journal_entries
+msgid "Create your first manual journal entry for budget testing."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.actions.act_window,help:cost_center_budget_control.action_budget_allocation
+msgid "Create your first overhead budget allocation."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__create_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__create_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__create_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__create_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__create_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__create_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__create_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__create_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__create_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__create_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "Critical"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_critical_threshold
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Critical Threshold (%)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__currency_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__currency_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__currency_id
+msgid "Currency"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__is_currently_active
+msgid "Currently Active"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan_line__alert_level__danger
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Danger"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_control_mode
+msgid "Defines how the system behaves when a budget threshold is exceeded."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__name
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__name
+msgid "Description"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__display_name
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__display_name
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__display_name
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__display_name
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__display_name
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Display budget alerts in the chatter of related documents."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_allocation__state__draft
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan__state__draft
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Draft"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Draft budgets cannot be closed directly."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_activity_enabled
+msgid "Enable Activity Scheduling"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_control_enabled
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Enable Budget Control"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_chatter_enabled
+msgid "Enable Chatter Alerts"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__date_to
+msgid "End Date"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/cost_center.py:0
+msgid "Error! You cannot create recursive cost centers."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan_line__alert_level__exceeded
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Exceeded"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_follower_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_follower_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_follower_ids
+msgid "Followers"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_partner_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_partner_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_partner_ids
+msgid "Followers (Partners)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__activity_type_icon
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__activity_type_icon
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__complete_name
+msgid "Full Name"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_control_enabled
+msgid "Global toggle to enable/disable budget threshold checks."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Group By"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__has_message
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__has_message
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__has_message
+msgid "Has Message"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__id
+msgid "ID"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_exception_icon
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_exception_icon
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_exception_icon
+msgid "Icon"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__activity_exception_icon
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__activity_exception_icon
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__message_needaction
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__message_needaction
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__message_has_error
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__message_has_sms_error
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__message_has_error
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__message_has_sms_error
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__message_has_error
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_activity_enabled
+msgid "If enabled, critical alerts will schedule activities for managers."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_chatter_enabled
+msgid "If enabled, threshold alerts will be posted to the document chatter."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__is_currently_active
+msgid "Indicates if the budget is approved and within its date range."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid ""
+"Internal error: allocation journal entry is not balanced (debits: %s, "
+"credits: %s). Please contact your administrator."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_is_follower
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_is_follower
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_is_follower
+msgid "Is Follower"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__journal_id
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_move_form_inherit_budget
+msgid "Journal"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.actions.act_window,name:cost_center_budget_control.action_custom_journal_entries
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_journal_entry
+msgid "Journal Entries"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_account_move
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__move_id
+msgid "Journal Entry"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_account_move_line
+msgid "Journal Item"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+msgid "Journal Postings"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__write_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__write_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__write_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__write_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__write_uid
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__write_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__write_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_approval_wizard__write_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__write_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__write_date
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__analytic_account_id
+msgid ""
+"Linked analytic account for financial tracking. Created automatically if "
+"left empty."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__res_config_settings__budget_control_mode__approval_required
+msgid "Manager Approval Required"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_has_error
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_has_error
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_has_error
+msgid "Message Delivery error"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_ids
+msgid "Messages"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__my_activity_date_deadline
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__my_activity_date_deadline
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__name
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Name"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_date_deadline
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_date_deadline
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_summary
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_summary
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_summary
+msgid "Next Activity Summary"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_type_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_type_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_type_id
+msgid "Next Activity Type"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "No"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.actions.act_window,help:cost_center_budget_control.action_cost_center
+msgid "No cost centers found."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/wizard/budget_approval_wizard.py:0
+msgid ""
+"No plans were affected. Make sure the selected plans are in the correct "
+"state for this action."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "No valid target cost centers found in allocation lines."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan_line__alert_level__normal
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "Normal"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_needaction_counter
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_needaction_counter
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_needaction_counter
+msgid "Number of Actions"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_has_error_counter
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_has_error_counter
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_has_error_counter
+msgid "Number of errors"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__message_needaction_counter
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__message_needaction_counter
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__message_has_error_counter
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__message_has_error_counter
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Only Budget Managers can modify a submitted budget."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Only draft budgets can be submitted."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Only submitted budgets can be approved."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "Only submitted or approved budgets can be reset to draft."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_approval_wizard__comment
+msgid "Optional comment explaining the decision. Will be posted to chatter."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_approval_wizard_form
+msgid "Optional comment for the chatter..."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Over Budget"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:mail.template,subject:cost_center_budget_control.mail_template_budget_over_budget
+msgid ""
+"Over-Budget Alert: {{ object.plan_id.cost_center_id.name }} - {{ "
+"object.account_id.name }}"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__overhead_account_id
+msgid "Overhead Account (Credit)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model,name:cost_center_budget_control.model_budget_allocation
+msgid "Overhead Allocation Record"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__parent_id
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_cost_center_search
+msgid "Parent"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__parent_path
+msgid "Parent Path"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__percentage
+msgid "Percentage (%)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_graph
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_pivot
+msgid "Planned"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__planned_amount
+msgid "Planned Amount"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/wizard/budget_approval_wizard.py:0
+msgid "Please select at least one budget plan."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_allocation__state__posted
+msgid "Posted"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__ref
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__name
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Reference"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_approval_wizard__action_type__reject
+msgid "Reject"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/wizard/budget_approval_wizard.py:0
+msgid "Rejected: %s"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_pivot
+msgid "Remaining"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__remaining_amount
+msgid "Remaining Amount"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.ui.menu,name:cost_center_budget_control.menu_cost_center_reporting_root
+msgid "Reporting"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Reset to Draft"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__responsible_id
+msgid "Responsible"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__activity_user_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__activity_user_id
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__activity_user_id
+msgid "Responsible User"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__reversal_move_id
+msgid "Reversal Entry"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "Reversal of allocation: %s"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__message_has_sms_error
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__message_has_sms_error
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid ""
+"Schedule activities for budget managers when critical thresholds are "
+"exceeded."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__source_cost_center_id
+msgid "Source Cost Center"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__date_from
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Start Date"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__state
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__state
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Status"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__activity_state
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__activity_state
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Submit"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan__state__submitted
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_search
+msgid "Submitted"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "TOTAL"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__target_account_id
+msgid "Target Account (Debit)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation_line__cost_center_id
+msgid "Target Cost Center"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__target_cost_center_ids
+msgid "Target Cost Centers"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_account_analytic_account__cost_center_id
+msgid "The cost center associated with this analytic account."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.constraint,message:cost_center_budget_control.constraint_cost_center_code_company_uniq
+msgid "The cost center code must be unique per company!"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/account_move.py:0
+msgid ""
+"The following budgets exceeded their blocking threshold:\n"
+"%s\n"
+"\n"
+"Move: %s (Amount: %s %s)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid ""
+"The percentage of budget usage that blocks posting of an account move in "
+"'Blocking' mode."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "The percentage of budget usage that triggers a critical alert."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "The percentage of budget usage that triggers a warning message."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan_line__remaining_amount
+msgid "The remaining budget amount (Planned - Actual)."
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/budget_plan.py:0
+msgid "The start date of the budget plan must be before the end date."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__state
+msgid "The status of the budget plan."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Total Actual"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_list
+msgid "Total Amount"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+msgid "Total Percentage"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Total Planned"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Total Remaining"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "Total Variance"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__activity_exception_decoration
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__activity_exception_decoration
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__usage_percent
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "Usage %"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_blocking_threshold
+msgid "Usage percentage that blocks posting (in Blocking mode)."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_critical_threshold
+msgid "Usage percentage that triggers a critical alert."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_res_config_settings__budget_warning_threshold
+msgid "Usage percentage that triggers a warning."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan_line__variance_amount
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_pivot
+msgid "Variance"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__budget_plan_line__alert_level__warning
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_line_reporting_search
+msgid "Warning"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields.selection,name:cost_center_budget_control.selection__res_config_settings__budget_control_mode__warning_only
+msgid "Warning Only"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_res_config_settings__budget_warning_threshold
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.res_config_settings_view_form
+msgid "Warning Threshold (%)"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_allocation__website_message_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_budget_plan__website_message_ids
+#: model:ir.model.fields,field_description:cost_center_budget_control.field_cost_center__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_allocation__website_message_ids
+#: model:ir.model.fields,help:cost_center_budget_control.field_budget_plan__website_message_ids
+#: model:ir.model.fields,help:cost_center_budget_control.field_cost_center__website_message_ids
+msgid "Website communication history"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "Yes"
+msgstr ""
+
+#. module: cost_center_budget_control
+#. odoo-python
+#: code:addons/cost_center_budget_control/models/allocation.py:0
+msgid "You cannot delete a posted allocation record."
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_plan_form
+msgid "e.g. Q1 2026 Budget"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.view_budget_allocation_form
+msgid "e.g. Q1 Overhead Allocation"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "on"
+msgstr ""
+
+#. module: cost_center_budget_control
+#: model_terms:ir.ui.view,arch_db:cost_center_budget_control.budget_variance_report
+msgid "to"
+msgstr ""

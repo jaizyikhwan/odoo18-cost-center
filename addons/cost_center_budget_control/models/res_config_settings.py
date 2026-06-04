@@ -15,12 +15,12 @@ class ResConfigSettings(models.TransientModel):
     budget_control_mode = fields.Selection([
         ("warning_only", "Warning Only"),
         ("blocking", "Blocking"),
-        ("approval_required", "Manager Approval Required"),
-    ], 
+    ],
         string="Budget Control Mode",
         config_parameter="cost_center_budget_control.mode",
         default="warning_only",
-        help="Defines how the system behaves when a budget threshold is exceeded."
+        help="Defines how the system behaves when a budget threshold is exceeded. "
+             "warning_only logs alerts to chatter; blocking halts the posting."
     )
 
     budget_warning_threshold = fields.Float(

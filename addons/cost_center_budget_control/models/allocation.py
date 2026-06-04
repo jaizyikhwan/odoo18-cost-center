@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+import logging
 from hashlib import sha1
 from psycopg2 import IntegrityError
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_round
+
+_logger = logging.getLogger(__name__)
 
 
 class BudgetAllocation(models.Model):

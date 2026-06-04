@@ -1,5 +1,8 @@
+import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 class CostCenter(models.Model):
     _name = "cost.center"

@@ -1,11 +1,14 @@
+import logging
 from odoo import models, _
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    def _is_budget_override_allowed(self):
+    def _is_budget_override_allowed(self) -> bool:
         """Check if the current user can apply budget overrides.
 
         Returns True only if the user belongs to group_budget_override_manager.
@@ -15,7 +18,7 @@ class AccountMove(models.Model):
             'cost_center_budget_control.group_budget_override_manager'
         )
 
-    def _validate_budget_control(self):
+    def _validate_budget_control(self) -> dict:
         """Validate budget thresholds before posting a move.
 
         - Reads warning/critical/blocking thresholds from ir.config_parameter.
@@ -64,14 +67,15 @@ class AccountMove(models.Model):
             return result
 
         projected_increment_by_budget_line = {}
+        # Precompute lookup index: (account_id, analytic_account_id) -> bud_line id
+        # Avoids nested .filtered() which triggers N+1 queries
+        bud_line_lookup = {}
+        for bud_line in impacted_budget_lines:
+            key = (bud_line.account_id.id, bud_line.plan_id.cost_center_id.analytic_account_id.id)
+            bud_line_lookup.setdefault(key, []).append(bud_line.id)
+
         for line in self.line_ids.filtered(lambda l: l.analytic_distribution and l.account_id):
             distribution = line.analytic_distribution or {}
-            matching_budget_lines = impacted_budget_lines.filtered(
-                lambda bud_line: bud_line.account_id == line.account_id
-            )
-            if not matching_budget_lines:
-                continue
-
             for analytic_key, percent in distribution.items():
                 try:
                     analytic_account_id = int(analytic_key)
@@ -79,11 +83,10 @@ class AccountMove(models.Model):
                 except (ValueError, TypeError):
                     continue
 
-                for bud_line in matching_budget_lines.filtered(
-                    lambda rec: rec.plan_id.cost_center_id.analytic_account_id.id == analytic_account_id
-                ):
-                    projected_increment_by_budget_line[bud_line.id] = (
-                        projected_increment_by_budget_line.get(bud_line.id, 0.0) + raw_amount
+                bud_line_ids = bud_line_lookup.get((line.account_id.id, analytic_account_id), [])
+                for bud_line_id in bud_line_ids:
+                    projected_increment_by_budget_line[bud_line_id] = (
+                        projected_increment_by_budget_line.get(bud_line_id, 0.0) + raw_amount
                     )
 
         # Evaluate thresholds for each impacted budget line
