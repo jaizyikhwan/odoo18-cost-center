@@ -12,7 +12,6 @@ Enterprise-grade Cost Center management for Odoo 18 Community Edition.
     "license": "LGPL-3",
     "depends": [
         "base",
-        "board",
         "account",
         "analytic",
         "mail",

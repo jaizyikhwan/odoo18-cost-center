@@ -346,10 +346,6 @@ class BudgetAllocation(models.Model):
                 rec.reversal_move_id = reversal.id
             rec.write({"state": "cancelled"})
 
-    def action_draft(self):
-        for rec in self:
-            rec.write({"state": "draft"})
-
     # -------------------------------------------------------------------------
     # ORM OVERRIDES
     # -------------------------------------------------------------------------

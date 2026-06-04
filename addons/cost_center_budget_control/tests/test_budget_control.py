@@ -31,8 +31,7 @@ class TestBudgetControl(TransactionCase):
         })
         # Create cost centers
         cls.cc_a = env['cost.center'].create({'name': 'CC A', 'code': 'CCA', 'company_id': cls.company_a.id, 'analytic_account_id': cls.analytic_a.id})
-        cls.cc_b = env['cost.center'].create({'name': 'CC B', 'code': 'CCB', 'company_id': cls.company_b.id, 'analytic_account_id': cls.analytic_b.id})
-        
+
         # Create accounts (use company_ids as Odoo 18 account.account expects multi-company field)
         cls.account_expense = env['account.account'].create({
             'name': 'Expense A', 'code': 'EXPA', 'account_type': 'expense',
@@ -117,8 +116,8 @@ class TestBudgetControl(TransactionCase):
             'line_ids': [(0,0, {'account_id': self.account_expense.id, 'debit': 200.0, 'credit': 0.0, 'analytic_distribution': {str(self.analytic_a.id): 100.0}}),
                          (0,0, {'account_id': self.account_expense.id, 'debit': 0.0, 'credit': 200.0})]
         })
-        # Manager posts with override context
-        move = move.with_user(self.user_manager).with_context(budget_override=True)
+        # Manager posts in blocking mode (override allowed via group membership)
+        move = move.with_user(self.user_manager)
         move.action_post()
         self.assertEqual(move.state, 'posted')
 
@@ -132,7 +131,7 @@ class TestBudgetControl(TransactionCase):
             'line_ids': [(0,0, {'account_id': self.account_expense.id, 'debit': 200.0, 'credit': 0.0, 'analytic_distribution': {str(self.analytic_a.id): 100.0}}),
                          (0,0, {'account_id': self.account_expense.id, 'debit': 0.0, 'credit': 200.0})]
         })
-        move = move.with_user(self.user_normal).with_context(budget_override=True)
+        move = move.with_user(self.user_normal)
         with self.assertRaises(UserError):
             move.action_post()
 

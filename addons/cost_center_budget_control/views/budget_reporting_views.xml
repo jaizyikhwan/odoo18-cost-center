@@ -77,12 +77,4 @@
         <field name="view_id" ref="view_budget_plan_line_reporting_graph"/>
     </record>
 
-    <record id="action_budget_over_budget_lines" model="ir.actions.act_window">
-        <field name="name">Over Budget Lines</field>
-        <field name="res_model">budget.plan.line</field>
-        <field name="view_mode">list,pivot,graph</field>
-        <field name="search_view_id" ref="view_budget_plan_line_reporting_search"/>
-        <field name="domain">[('alert_level', '=', 'exceeded')]</field>
-    </record>
-
 </odoo>
