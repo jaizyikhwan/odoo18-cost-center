@@ -48,7 +48,7 @@
                     <notebook>
                         <page string="Budget Lines" name="lines">
                             <field name="line_ids" readonly="state in ('approved', 'closed', 'cancelled')">
-                                    <list editable="bottom">
+                                    <list editable="bottom" decoration-warning="alert_level == 'warning'" decoration-danger="alert_level in ('danger', 'exceeded')" decoration-success="alert_level == 'ok'">
                                         <field name="account_id"/>
                                         <field name="name"/>
                                         <field name="currency_id" invisible="1"/>
@@ -57,7 +57,7 @@
                                     <field name="variance_amount" sum="Total Variance"/>
                                     <field name="remaining_amount" sum="Total Remaining"/>
                                     <field name="usage_percent" widget="progressbar" options="{'current_value': 'usage_percent', 'max_value': 100}"/>
-                                    <field name="alert_level"/>
+                                    <field name="alert_level" widget="badge" decoration-warning="alert_level == 'warning'" decoration-danger="alert_level in ('danger', 'exceeded')" decoration-success="alert_level == 'ok'"/>
                                 </list>
                             </field>
                         </page>

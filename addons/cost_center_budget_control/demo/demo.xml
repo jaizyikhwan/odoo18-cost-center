@@ -1,64 +1,131 @@
 <odoo>
-    <data noupdate="1">
-        <!-- Demo Company (must be defined first) -->
+    <data noupdate="0">
+        <!--
+            =============================
+            Company 1: Demo Company (USD)
+            =============================
+        -->
         <record id="demo_company" model="res.company">
             <field name="name">Demo Company for Budget</field>
             <field name="currency_id" ref="base.USD"/>
         </record>
 
-        <!-- Demo Users -->
+        <!-- Second company for multi-company isolation testing -->
+        <record id="demo_company_2" model="res.company">
+            <field name="name">Demo Company EU (EUR)</field>
+            <field name="currency_id" ref="base.EUR"/>
+        </record>
+
+        <!--
+            =============================
+            Demo Users (no plaintext password; reset via login form)
+            =============================
+        -->
         <record id="demo_budget_user" model="res.users">
             <field name="name">Demo Budget User</field>
             <field name="login">demouser</field>
-            <field name="password">demouser</field>
-            <field name="company_ids" eval="[(4, ref('demo_company'))]"/>
+            <field name="company_ids" eval="[(4, ref('demo_company')), (4, ref('demo_company_2'))]"/>
             <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_user'))]"/>
         </record>
 
         <record id="demo_budget_manager" model="res.users">
             <field name="name">Demo Budget Manager</field>
             <field name="login">demomanager</field>
-            <field name="password">demomanager</field>
-            <field name="company_ids" eval="[(4, ref('demo_company'))]"/>
+            <field name="company_ids" eval="[(4, ref('demo_company')), (4, ref('demo_company_2'))]"/>
             <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_manager')),
                                        (4, ref('cost_center_budget_control.group_budget_override_manager'))]"/>
         </record>
 
-        <!-- Demo Analytic Account -->
+        <!--
+            =============================
+            Cost Center Hierarchy for Company 1
+            =============================
+        -->
         <record id="analytic_account_sales_dept_demo" model="account.analytic.account">
             <field name="name">Sales Department AA</field>
             <field name="plan_id" ref="analytic.analytic_plan_departments"/>
             <field name="company_id" ref="demo_company"/>
         </record>
+        <record id="analytic_account_sales_eu_demo" model="account.analytic.account">
+            <field name="name">Sales EU AA</field>
+            <field name="plan_id" ref="analytic.analytic_plan_departments"/>
+            <field name="company_id" ref="demo_company_2"/>
+        </record>
+        <record id="analytic_account_sales_na_demo" model="account.analytic.account">
+            <field name="name">Sales NA AA</field>
+            <field name="plan_id" ref="analytic.analytic_plan_departments"/>
+            <field name="company_id" ref="demo_company"/>
+        </record>
 
-        <!-- Demo Cost Center -->
-        <record id="cost_center_sales_dept_demo" model="cost.center">
-            <field name="name">Sales Department</field>
-            <field name="code">SALES</field>
+        <!-- Parent: Global Sales -->
+        <record id="cost_center_sales_global_demo" model="cost.center">
+            <field name="name">Global Sales</field>
+            <field name="code">GSALES</field>
             <field name="company_id" ref="demo_company"/>
             <field name="analytic_account_id" ref="cost_center_budget_control.analytic_account_sales_dept_demo"/>
             <field name="responsible_id" ref="demo_budget_manager"/>
         </record>
+        <!-- Child: NA Sales under Global Sales -->
+        <record id="cost_center_sales_dept_demo" model="cost.center">
+            <field name="name">Sales Department (NA)</field>
+            <field name="code">SALES-NA</field>
+            <field name="parent_id" ref="cost_center_sales_global_demo"/>
+            <field name="company_id" ref="demo_company"/>
+            <field name="analytic_account_id" ref="cost_center_budget_control.analytic_account_sales_na_demo"/>
+            <field name="responsible_id" ref="demo_budget_manager"/>
+        </record>
+        <!-- Child of Company 2 (different company) -->
+        <record id="cost_center_sales_eu_demo" model="cost.center">
+            <field name="name">Sales Department (EU)</field>
+            <field name="code">SALES-EU</field>
+            <field name="company_id" ref="demo_company_2"/>
+            <field name="analytic_account_id" ref="cost_center_budget_control.analytic_account_sales_eu_demo"/>
+            <field name="responsible_id" ref="demo_budget_manager"/>
+        </record>
 
-        <!-- Demo Expense Account -->
+        <!--
+            =============================
+            Demo Expense Accounts (one per company)
+            =============================
+        -->
         <record id="account_expenses_general_demo" model="account.account">
             <field name="name">General Expenses Demo</field>
             <field name="code">600000</field>
             <field name="account_type">expense</field>
             <field name="company_id" ref="demo_company"/>
         </record>
+        <record id="account_expenses_general_eu_demo" model="account.account">
+            <field name="name">General Expenses EU</field>
+            <field name="code">600001</field>
+            <field name="account_type">expense</field>
+            <field name="company_id" ref="demo_company_2"/>
+        </record>
 
-        <!-- Demo Journal -->
+        <!--
+            =============================
+            Demo Journals (one per company)
+            =============================
+        -->
         <record id="journal_misc_demo" model="account.journal">
             <field name="name">Miscellaneous Operations Demo</field>
             <field name="type">general</field>
             <field name="code">MISC-D</field>
             <field name="company_id" ref="demo_company"/>
         </record>
+        <record id="journal_misc_eu_demo" model="account.journal">
+            <field name="name">Miscellaneous Operations EU</field>
+            <field name="type">general</field>
+            <field name="code">MISC-EU</field>
+            <field name="company_id" ref="demo_company_2"/>
+        </record>
 
-        <!-- Demo Budget Plan -->
+        <!--
+            =============================
+            Demo Budget Plans (multiple periods, multiple cost centers)
+            =============================
+        -->
         <record id="budget_plan_q1_sales_demo" model="budget.plan">
-            <field name="name">Q1 Sales Budget</field>
+            <field name="name">Q1 Sales Budget (NA)</field>
             <field name="cost_center_id" ref="cost_center_sales_dept_demo"/>
             <field name="date_from">2026-01-01</field>
             <field name="date_to">2026-03-31</field>
@@ -66,16 +133,39 @@
             <field name="approved_by" ref="base.user_admin"/>
             <field name="approved_date" eval="(DateTime.now() - relativedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
-        
-        <!-- Demo Budget Plan Line - will be over budget -->
+        <record id="budget_plan_q1_sales_eu_demo" model="budget.plan">
+            <field name="name">Q1 Sales Budget (EU)</field>
+            <field name="cost_center_id" ref="cost_center_sales_eu_demo"/>
+            <field name="date_from">2026-01-01</field>
+            <field name="date_to">2026-03-31</field>
+            <field name="state">approved</field>
+            <field name="approved_by" ref="base.user_admin"/>
+            <field name="approved_date" eval="(DateTime.now() - relativedelta(days=5)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
+
+        <!--
+            =============================
+            Demo Budget Plan Lines
+            =============================
+        -->
         <record id="budget_plan_line_q1_sales_expenses_demo" model="budget.plan.line">
             <field name="plan_id" ref="budget_plan_q1_sales_demo"/>
             <field name="account_id" ref="account_expenses_general_demo"/>
             <field name="name">Sales Team Travel</field>
             <field name="planned_amount">500.0</field>
         </record>
+        <record id="budget_plan_line_q1_sales_eu_demo" model="budget.plan.line">
+            <field name="plan_id" ref="budget_plan_q1_sales_eu_demo"/>
+            <field name="account_id" ref="account_expenses_general_eu_demo"/>
+            <field name="name">EU Sales Team Travel</field>
+            <field name="planned_amount">800.0</field>
+        </record>
 
-        <!-- Demo Allocation -->
+        <!--
+            =============================
+            Demo Allocation (single-target for simplicity)
+            =============================
+        -->
         <record id="allocation_q1_sales_demo" model="budget.allocation">
             <field name="name">Q1 Marketing Overhead Allocation</field>
             <field name="source_cost_center_id" ref="cost_center_sales_dept_demo"/>
@@ -87,15 +177,17 @@
             <field name="company_id" ref="demo_company"/>
             <field name="state">posted</field>
         </record>
-
-        <!-- Demo Allocation Line -->
         <record id="allocation_line_q1_sales_demo" model="budget.allocation.line">
             <field name="allocation_id" ref="allocation_q1_sales_demo"/>
             <field name="cost_center_id" ref="cost_center_sales_dept_demo"/>
             <field name="percentage">100.0</field>
         </record>
-        
-        <!-- Simulate an over-budget transaction for 'Sales Team Travel' -->
+
+        <!--
+            =============================
+            Simulate an over-budget transaction for 'Sales Team Travel' (NA)
+            =============================
+        -->
         <function model="account.move" name="create">
             <value eval="[{
                 'journal_id': ref('journal_misc_demo'),
@@ -107,7 +199,7 @@
                         'account_id': ref('account_expenses_general_demo'),
                         'debit': 600.0,
                         'credit': 0.0,
-                        'analytic_distribution': {str(ref('cost_center_budget_control.analytic_account_sales_dept_demo')): 100.0}
+                        'analytic_distribution': {str(ref('cost_center_budget_control.analytic_account_sales_na_demo')): 100.0}
                     }),
                     (0, 0, {
                         'account_id': ref('account_expenses_general_demo'),
@@ -117,8 +209,14 @@
                 ],
             }]"/>
         </function>
+    </data>
 
-        <!-- Budget Control Settings for Demo -->
+    <data noupdate="1">
+        <!--
+            =============================
+            Budget Control System Parameters (update-once, do not reset on upgrade)
+            =============================
+        -->
         <record id="ir_config_parameter_budget_enabled_demo" model="ir.config_parameter">
             <field name="key">cost_center_budget_control.enabled</field>
             <field name="value">True</field>
@@ -147,6 +245,5 @@
             <field name="key">cost_center_budget_control.activity_enabled</field>
             <field name="value">True</field>
         </record>
-
     </data>
 </odoo>
