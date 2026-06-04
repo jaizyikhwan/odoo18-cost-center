@@ -175,6 +175,10 @@ class AccountMove(models.Model):
         if validation_result.get('should_create_activity'):
             self._create_budget_override_activity(validation_result['blocked_budgets'])
 
+        # Send over-budget email notifications
+        if validation_result.get('blocked_budgets') or validation_result.get('warnings'):
+            self._send_over_budget_notifications(impacted)
+
         return res
 
     def button_cancel(self):
@@ -223,6 +227,36 @@ class AccountMove(models.Model):
             note=activity_note,
             user_id=managers[0].id,
         )
+
+    def _send_over_budget_notifications(self, impacted_budget_lines):
+        """Send over-budget email notifications via mail.template.
+
+        Notifies the cost center manager of each impacted budget line that
+        has crossed the warning or critical threshold.
+        """
+        if not impacted_budget_lines:
+            return
+
+        # Filter to lines that have crossed thresholds
+        exceeded_lines = impacted_budget_lines.filtered(
+            lambda l: l.alert_level in ('warning', 'danger', 'exceeded')
+        )
+        if not exceeded_lines:
+            return
+
+        template = self.env.ref(
+            'cost_center_budget_control.mail_template_budget_over_budget',
+            raise_if_not_found=False,
+        )
+        if not template:
+            return
+
+        # Use sudo() since mail.template sends emails as superuser
+        for line in exceeded_lines:
+            line.with_context(lang=self.env.lang).sudo().message_post_with_template(
+                template.id,
+                email_layout_xmlid='mail.mail_notification_light',
+            )
 
 
 class AccountMoveLine(models.Model):

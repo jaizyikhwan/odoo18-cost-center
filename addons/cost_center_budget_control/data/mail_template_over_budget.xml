@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="mail_template_budget_over_budget" model="mail.template">
+        <field name="name">Budget: Over-Budget Notification</field>
+        <field name="model_id" ref="model_budget_plan_line"/>
+        <field name="subject">Over-Budget Alert: {{ object.plan_id.cost_center_id.name }} - {{ object.account_id.name }}</field>
+        <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+        <field name="email_to">{{ object.plan_id.cost_center_id.manager_id.email if object.plan_id.cost_center_id.manager_id else user.email }}</field>
+        <field name="body_html" type="html">
+<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+    <h2 style="color: #714B67;">Budget Threshold Exceeded</h2>
+
+    <p>Hello,</p>
+
+    <p>
+        The following budget line has exceeded its threshold and requires your attention:
+    </p>
+
+    <table style="border-collapse: collapse; margin: 16px 0; width: 100%;">
+        <tr style="background-color: #f5f5f5;">
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Cost Center</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ object.plan_id.cost_center_id.code }} — {{ object.plan_id.cost_center_id.name }}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Budget Plan</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ object.plan_id.name }}</td>
+        </tr>
+        <tr style="background-color: #f5f5f5;">
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Account</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ object.account_id.code }} — {{ object.account_id.name }}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Period</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ object.plan_id.date_from }} to {{ object.plan_id.date_to }}
+            </td>
+        </tr>
+        <tr style="background-color: #f5f5f5;">
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Planned Amount</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ format_amount(object.planned_amount, object.currency_id) }}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Actual Amount</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ format_amount(object.actual_amount, object.currency_id) }}
+            </td>
+        </tr>
+        <tr style="background-color: #f5f5f5;">
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Usage</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd; color: #dc3545; font-weight: bold;">
+                {{ "%.1f"|format(object.usage_percent) }}%
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Alert Level</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                <span style="background-color: #dc3545; color: white; padding: 2px 8px; border-radius: 3px;">
+                    {{ object.alert_level }}
+                </span>
+            </td>
+        </tr>
+    </table>
+
+    <p>
+        Please review this budget and take appropriate action. You can:
+    </p>
+    <ul>
+        <li>Adjust the planned amount if the budget was set too low</li>
+        <li>Investigate the source of over-expenditure</li>
+        <li>Cancel or close the budget if it's no longer relevant</li>
+    </ul>
+
+    <p style="margin-top: 24px;">
+        <a href="{{ object.get_base_url() }}/web#id={{ object.id }}&amp;view_type=form&amp;model=budget.plan.line"
+           style="background-color: #714B67; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px;">
+            View Budget Line
+        </a>
+    </p>
+
+    <p style="color: #666; font-size: 12px; margin-top: 32px;">
+        This is an automated notification from the Cost Center &amp; Budget Control module.
+    </p>
+</div>
+        </field>
+        <field name="lang">en_US</field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+</odoo>
