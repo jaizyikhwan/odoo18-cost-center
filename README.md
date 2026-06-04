@@ -174,23 +174,25 @@ odoo-cost-center/
 
 ## Screenshots
 
-Screenshots will be added under `addons/cost_center_budget_control/static/img/`. The following are placeholder paths:
+### 1. Cost Centers — Hierarchical List
+*Cost center list grouped by parent_id, showing the parent → child structure at a glance.*
+![Cost Centers Grouped by Parent](addons/cost_center_budget_control/static/img/01_cost_center_form.png)
 
-### 1. Cost Center Form
-*Hierarchical cost center with parent-child relationship, code, manager, and analytic account.*
-![Cost Center Form](addons/cost_center_budget_control/static/img/01_cost_center_form.png)
+### 2. Cost Center Form
+*Detail form of a single cost center with analytic account link, responsible user, and company isolation.*
+![Cost Center Form](addons/cost_center_budget_control/static/img/02_cost_center_form.png)
 
-### 2. Budget Plan Form
-*State transition actions, real-time variance tracking progress bars, and reactive danger alerts on lines.*
-![Budget Plan Form](addons/cost_center_budget_control/static/img/02_budget_plan_form.png)
+### 3. Budget Plan Form
+*Approved state with embedded line items, usage progress bars, and decoration-danger on over-budget rows.*
+![Budget Plan Form](addons/cost_center_budget_control/static/img/03_budget_plan_form.png)
 
-### 3. Allocation Form
-*Pool source setup, target percentage allocations, and the generated balanced journal entries.*
-![Allocation Form](addons/cost_center_budget_control/static/img/03_allocation_form.png)
+### 4. Allocation Form
+*Overhead source cost center, target percentages, posted state badge, and idempotency reference key.*
+![Allocation Form](addons/cost_center_budget_control/static/img/04_allocation_form.png)
 
-### 4. Budget Variance Report
-*QWeb PDF report showing planned vs actual variance per cost center with status indicators.*
-![Budget Variance Report](addons/cost_center_budget_control/static/img/04_variance_report.png)
+### 5. Budget Variance Report
+*QWeb PDF report comparing planned vs actual variance per cost center (A4, paperformat_euro).*
+![Budget Variance Report](addons/cost_center_budget_control/static/img/05_variance_report.png)
 
 ---
 
