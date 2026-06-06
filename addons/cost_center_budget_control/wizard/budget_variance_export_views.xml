@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Wizard Form View -->
+    <record id="view_budget_variance_export_form" model="ir.ui.view">
+        <field name="name">budget.variance.export.form</field>
+        <field name="model">budget.variance.export</field>
+        <field name="arch" type="xml">
+            <form string="Export Budget Variance">
+                <group>
+                    <group string="Selection">
+                        <field name="plan_ids" widget="many2many_tags"
+                               options="{'no_create': True}"
+                               placeholder="Leave empty to use filters below"/>
+                        <field name="state_filter"/>
+                        <field name="cost_center_id"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group string="Date Range">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Output">
+                        <field name="format"/>
+                        <field name="include_company_currency"/>
+                    </group>
+                </group>
+                <group invisible="not file_data">
+                    <field name="file_name" readonly="1"/>
+                    <field name="file_data" readonly="1" filename="file_name"/>
+                </group>
+                <footer>
+                    <button name="action_export" string="Export" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_budget_variance_export" model="ir.actions.act_window">
+        <field name="name">Export Budget Variance</field>
+        <field name="res_model">budget.variance.export</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+        <field name="binding_model_id" ref="model_budget_plan"/>
+        <field name="binding_type">action</field>
+    </record>
+
+</odoo>

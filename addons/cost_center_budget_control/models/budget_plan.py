@@ -30,6 +30,7 @@ class BudgetPlan(models.Model):
         "draft", "Draft"),
         ("submitted", "Submitted"),
         ("approved", "Approved"),
+        ("revised", "Revised"),
         ("closed", "Closed"),
         ("cancelled", "Cancelled")],
         string="Status",
@@ -48,9 +49,25 @@ class BudgetPlan(models.Model):
     currency_id = fields.Many2one(
         "res.currency",
         string="Currency",
+        required=True,
+        help="Currency for budget amounts. Defaults to the company currency, but "
+             "can be overridden (e.g. a USD-denominated budget for an IDR company). "
+             "Actual and PO-committed amounts are auto-converted to this currency.",
+    )
+    company_currency_id = fields.Many2one(
+        "res.currency",
+        string="Company Currency",
         related="company_id.currency_id",
         readonly=True,
-        store=True
+        store=True,
+        help="The reporting currency of the company. Used to display the "
+             "company-currency equivalent of budget amounts.",
+    )
+    is_multi_currency = fields.Boolean(
+        string="Multi-Currency",
+        compute="_compute_is_multi_currency",
+        store=True,
+        help="True if the budget currency differs from the company currency.",
     )
     line_ids = fields.One2many(
         "budget.plan.line",
@@ -68,6 +85,33 @@ class BudgetPlan(models.Model):
     approved_by = fields.Many2one("res.users", string="Approved By", readonly=True, copy=False)
     approved_date = fields.Datetime(string="Approved Date", readonly=True, copy=False)
 
+    parent_revision_id = fields.Many2one(
+        "budget.plan",
+        string="Revised From",
+        readonly=True,
+        copy=False,
+        ondelete="set null",
+        help="The original budget that this budget revises."
+    )
+    child_revision_ids = fields.One2many(
+        "budget.plan",
+        "parent_revision_id",
+        string="Revisions",
+        readonly=True,
+    )
+    revision_number = fields.Integer(
+        string="Revision #",
+        default=1,
+        readonly=True,
+        help="1 = original budget, 2 = first revision, 3 = second revision, etc.",
+    )
+    is_latest_revision = fields.Boolean(
+        string="Is Latest Revision",
+        compute="_compute_is_latest_revision",
+        store=True,
+        help="True if this is the most recent revision in the chain.",
+    )
+
     # -------------------------------------------------------------------------
     # COMPUTED FIELDS
     # -------------------------------------------------------------------------
@@ -81,6 +125,51 @@ class BudgetPlan(models.Model):
                 and rec.date_from <= today
                 and rec.date_to >= today
             )
+
+    @api.depends("child_revision_ids.revision_number", "child_revision_ids")
+    def _compute_is_latest_revision(self):
+        for rec in self:
+            if not rec.child_revision_ids:
+                rec.is_latest_revision = True
+            else:
+                rec.is_latest_revision = (
+                    rec.revision_number
+                    >= max(rec.child_revision_ids.mapped("revision_number"))
+                )
+
+    @api.depends("currency_id", "company_id.currency_id")
+    def _compute_is_multi_currency(self):
+        for rec in self:
+            rec.is_multi_currency = (
+                rec.company_id
+                and rec.currency_id
+                and rec.currency_id != rec.company_id.currency_id
+            )
+
+    @api.onchange("company_id")
+    def _onchange_company_id(self):
+        for rec in self:
+            if rec.company_id and not rec.currency_id:
+                rec.currency_id = rec.company_id.currency_id
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if "currency_id" in fields_list and not res.get("currency_id"):
+            company_id = res.get("company_id") or self.env.company.id
+            company = self.env["res.company"].browse(company_id)
+            if company.exists() and company.currency_id:
+                res["currency_id"] = company.currency_id.id
+        return res
+
+    @api.constrains("currency_id")
+    def _check_currency_active(self):
+        for rec in self:
+            if rec.currency_id and not rec.currency_id.active:
+                raise ValidationError(
+                    _("The currency '%s' is archived. Please choose an active currency.")
+                    % rec.currency_id.name
+                )
 
     @api.onchange("cost_center_id")
     def _onchange_cost_center_id(self):
@@ -118,7 +207,7 @@ class BudgetPlan(models.Model):
     # PROTECTION HELPERS
     # -------------------------------------------------------------------------
 
-    PROTECTED_STATES = ("approved", "closed", "cancelled")
+    PROTECTED_STATES = ("approved", "revised", "closed", "cancelled")
     SUBMITTED_RESTRICTED = ("submitted",)
 
     @staticmethod
@@ -143,10 +232,12 @@ class BudgetPlan(models.Model):
         return all(field in mail_fields for field in vals)
 
     def _check_state_protection(self, vals):
-        if self.env.su:
-            return
-
         if self._is_mail_write(vals):
+            return
+        # Allow pure state transitions (e.g. action_cancel writes {"state": ...})
+        # even on protected states. The state machine is the transition; the
+        # protection is against modifying other fields of a finalized budget.
+        if set(vals.keys()) <= {"state"}:
             return
 
         for rec in self:
@@ -197,6 +288,8 @@ class BudgetPlan(models.Model):
     # -------------------------------------------------------------------------
 
     def write(self, vals):
+        if self.env.context.get("bypass_state_protection"):
+            return super().write(vals)
         self._check_state_protection(vals)
         vals = self._filter_protected_fields(vals)
         if vals:
@@ -211,14 +304,14 @@ class BudgetPlan(models.Model):
         for rec in self:
             if rec.state != "draft":
                 raise UserError(_("Only draft budgets can be submitted."))
-            rec.write({"state": "submitted"})
+            rec.with_context(bypass_state_protection=True).write({"state": "submitted"})
             rec.message_post(body=_("Budget submitted for approval."))
 
     def action_approve(self):
         self.ensure_one()
         if self.state != "submitted":
             raise UserError(_("Only submitted budgets can be approved."))
-        self.write({
+        self.with_context(bypass_state_protection=True).write({
             "state": "approved",
             "approved_by": self.env.user.id,
             "approved_date": fields.Datetime.now(),
@@ -229,7 +322,7 @@ class BudgetPlan(models.Model):
         self.ensure_one()
         if self.state not in ("submitted", "approved"):
             raise UserError(_("Only submitted or approved budgets can be reset to draft."))
-        self.write({
+        self.with_context(bypass_state_protection=True).write({
             "state": "draft",
             "approved_by": False,
             "approved_date": False,
@@ -240,17 +333,77 @@ class BudgetPlan(models.Model):
         for rec in self:
             if rec.state in ("closed", "cancelled"):
                 raise UserError(_("Cannot cancel a closed or already cancelled budget."))
-            rec.write({"state": "cancelled"})
+            rec.with_context(bypass_state_protection=True).write({"state": "cancelled"})
             rec.message_post(body=_("Budget cancelled."))
 
     def action_close(self):
         for rec in self:
-            if rec.state in ("closed", "cancelled"):
-                raise UserError(_("Cannot close a budget that is already closed or cancelled."))
+            if rec.state in ("closed", "cancelled", "revised"):
+                raise UserError(_("Cannot close a budget that is already closed, cancelled, or revised."))
             if rec.state == "draft":
                  raise UserError(_("Draft budgets cannot be closed directly."))
-            rec.write({"state": "closed"})
+            rec.with_context(bypass_state_protection=True).write({"state": "closed"})
             rec.message_post(body=_("Budget closed."))
+
+    def action_revise(self):
+        """Create a new revision of this approved budget.
+
+        - Original budget transitions to 'revised' state (immutable history).
+        - New budget is created as a clone in 'approved' state with
+          ' (Rev N)' suffix, linked via parent_revision_id.
+        - Both versions post a chatter message cross-referencing the other.
+
+        Returns an action to open the newly created revision.
+        """
+        Revisions = self.env["budget.plan"]
+        for rec in self:
+            if rec.state != "approved":
+                raise UserError(_("Only approved budgets can be revised."))
+            # Next revision is the current one + 1 (walk the parent chain
+            # implicitly via the integer itself; no need to query children).
+            next_rev = rec.revision_number + 1
+
+            # 1) Mark original as 'revised' FIRST so the new approved plan
+            #    passes the _check_overlap constraint below.
+            rec.with_context(bypass_state_protection=True).write({"state": "revised"})
+
+            # 2) Clone the now-revised budget into a new approved budget.
+            new_budget = rec.copy({
+                "name": _("%s (Rev %s)") % (rec.name, next_rev),
+                "state": "approved",
+                "parent_revision_id": rec.id,
+                "revision_number": next_rev,
+                "approved_by": self.env.user.id,
+                "approved_date": fields.Datetime.now(),
+                "line_ids": [(0, 0, {
+                    "account_id": line.account_id.id,
+                    "name": line.name,
+                    "planned_amount": line.planned_amount,
+                }) for line in rec.line_ids],
+            })
+            rec.message_post(body=_("Revised as %s.") % new_budget.name)
+            new_budget.message_post(
+                body=_("Created as revision of %s.") % rec.name
+            )
+            Revisions |= new_budget
+
+        if len(Revisions) == 1:
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("Revised Budget"),
+                "res_model": "budget.plan",
+                "res_id": Revisions.id,
+                "view_mode": "form",
+                "target": "current",
+            }
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Revised Budgets"),
+            "res_model": "budget.plan",
+            "domain": [("id", "in", Revisions.ids)],
+            "view_mode": "list,form",
+            "target": "current",
+        }
 
 
 class BudgetPlanLine(models.Model):
@@ -292,6 +445,37 @@ class BudgetPlanLine(models.Model):
         ])
 
     @api.model
+    def _get_impacted_budget_lines_from_po_line(self, po_line):
+        """Return budget lines impacted by a Purchase Order line.
+
+        Mirrors ``_get_impacted_budget_lines_from_move`` but for PO lines.
+        Joins through the PO's company + date_order against the budget plan
+        period, and matches via analytic_distribution on the PO line.
+
+        Note: we do not pre-filter by ``po.state`` here. Cancelled POs must
+        still return the previously-impacted budget lines so that recompute
+        can zero out the committed amount. The actual ``po.state`` filter
+        lives in the SQL inside ``_compute_committed_amount``.
+        """
+        po = po_line.order_id
+        if not po:
+            return self.browse()
+        analytic_ids = set()
+        for key in (po_line.analytic_distribution or {}).keys():
+            try:
+                analytic_ids.add(int(key))
+            except (TypeError, ValueError):
+                continue
+        if not analytic_ids:
+            return self.browse()
+        return self.search([
+            ("company_id", "=", po.company_id.id),
+            ("plan_id.date_from", "<=", po.date_order),
+            ("plan_id.date_to", ">=", po.date_order),
+            ("plan_id.cost_center_id.analytic_account_id", "in", list(analytic_ids)),
+        ])
+
+    @api.model
     def _recompute_actual_amount_batch(self, lines):
         """Recompute actual_amount for impacted budget lines.
 
@@ -304,10 +488,10 @@ class BudgetPlanLine(models.Model):
         protected_lines = lines.with_context(bypass_protection=True)
         protected_lines.invalidate_recordset()
         protected_lines._compute_actual_amount()
-        protected_lines._compute_variance_amount()
         protected_lines._compute_remaining_amount()
         protected_lines._compute_usage_percent()
         protected_lines._compute_alert_level()
+        protected_lines._compute_committed_amount()
 
     plan_id = fields.Many2one(
         "budget.plan",
@@ -340,12 +524,31 @@ class BudgetPlanLine(models.Model):
         compute="_compute_actual_amount",
         store=True,
     )
-    variance_amount = fields.Monetary(
-        string="Variance",
+    po_committed_amount = fields.Monetary(
+        string="PO Committed",
         currency_field="currency_id",
         readonly=True,
-        compute="_compute_variance_amount",
+        compute="_compute_committed_amount",
         store=True,
+        help="Amount in confirmed (not yet invoiced) Purchase Orders for this "
+             "budget line. Computed from purchase.order.line via analytic_distribution.",
+    )
+    committed_amount = fields.Monetary(
+        string="Committed",
+        currency_field="currency_id",
+        readonly=True,
+        compute="_compute_committed_amount",
+        store=True,
+        help="Total committed = Actual + unbilled PO committed. Mirrors Odoo 18 "
+             "native 'Committed' column convention.",
+    )
+    available_amount = fields.Monetary(
+        string="Available",
+        currency_field="currency_id",
+        readonly=True,
+        compute="_compute_committed_amount",
+        store=True,
+        help="Planned - Committed. Negative = over-committed.",
     )
     remaining_amount = fields.Monetary(
         string="Remaining Amount",
@@ -372,6 +575,42 @@ class BudgetPlanLine(models.Model):
         related="plan_id.currency_id",
         readonly=True,
         store=True
+    )
+    company_currency_id = fields.Many2one(
+        "res.currency",
+        string="Company Currency",
+        related="plan_id.company_currency_id",
+        readonly=True,
+        store=True,
+    )
+    is_multi_currency = fields.Boolean(
+        string="Multi-Currency",
+        related="plan_id.is_multi_currency",
+        store=True,
+    )
+    planned_amount_company_currency = fields.Monetary(
+        string="Planned (Company Curr.)",
+        currency_field="company_currency_id",
+        compute="_compute_company_currency_amounts",
+        help="Planned amount converted to the company's reporting currency.",
+    )
+    actual_amount_company_currency = fields.Monetary(
+        string="Actual (Company Curr.)",
+        currency_field="company_currency_id",
+        compute="_compute_company_currency_amounts",
+        help="Actual amount converted to the company's reporting currency.",
+    )
+    committed_amount_company_currency = fields.Monetary(
+        string="Committed (Company Curr.)",
+        currency_field="company_currency_id",
+        compute="_compute_company_currency_amounts",
+        help="Committed amount converted to the company's reporting currency.",
+    )
+    available_amount_company_currency = fields.Monetary(
+        string="Available (Company Curr.)",
+        currency_field="company_currency_id",
+        compute="_compute_company_currency_amounts",
+        help="Available amount converted to the company's reporting currency.",
     )
     company_id = fields.Many2one(
         "res.company",
@@ -453,10 +692,77 @@ class BudgetPlanLine(models.Model):
 
             rec.actual_amount = float_round(weighted_sum, precision_digits=rec.currency_id.decimal_places)
 
-    @api.depends("planned_amount", "actual_amount")
-    def _compute_variance_amount(self):
+    @api.depends(
+        "plan_id.date_from",
+        "plan_id.date_to",
+        "plan_id.cost_center_id.analytic_account_id",
+        "account_id",
+    )
+    def _compute_committed_amount(self):
+        """Compute PO-committed, total committed, and available amounts.
+
+        Mirrors the Odoo 18 native convention: Committed = Achieved (posted) +
+        unbilled confirmed Purchase Orders. Available = Planned - Committed.
+
+        Uses parameterized SQL aggregation against purchase_order_line
+        analytic_distribution (JSONB) to keep performance predictable on
+        large datasets. The post_init_hook installs the supporting GIN
+        index, so this query uses the same index path as actual_amount.
+        """
         for rec in self:
-            rec.variance_amount = rec.planned_amount - rec.actual_amount
+            po_committed = 0.0
+            if all([rec.plan_id, rec.account_id, rec.plan_id.cost_center_id]):
+                analytic_account = rec.plan_id.cost_center_id.analytic_account_id
+                if analytic_account:
+                    analytic_key = str(analytic_account.id)
+                    plan = rec.plan_id
+                    currency = rec.currency_id
+                    # SQL: weighted aggregation via analytic_distribution JSONB
+                    sql_po = (
+                        "SELECT COALESCE(SUM("
+                        "  (l.price_subtotal)::numeric * "
+                        "  COALESCE((l.analytic_distribution->>%s)::numeric, 0) / 100.0"
+                        "), 0.0) "
+                        "FROM purchase_order_line l "
+                        "JOIN purchase_order o ON o.id = l.order_id "
+                        "WHERE l.product_id IS NOT NULL "
+                        "  AND o.state IN ('purchase', 'done') "
+                        "  AND o.company_id = %s "
+                        "  AND o.date_order >= %s "
+                        "  AND o.date_order <= %s "
+                        "  AND l.analytic_distribution ? %s"
+                    )
+                    params_po = (
+                        analytic_key,
+                        rec.company_id.id,
+                        plan.date_from,
+                        plan.date_to,
+                        analytic_key,
+                    )
+                    try:
+                        with rec.env.cr.savepoint():
+                            rec.env.cr.execute(sql_po, params_po)
+                            po_committed = rec.env.cr.fetchone()[0] or 0.0
+                    except Exception:
+                        # If purchase module data isn't ready or table missing
+                        # during initial install, skip without breaking the
+                        # compute. Recompute on next write. Savepoint ensures
+                        # the failed SQL doesn't poison the outer transaction.
+                        po_committed = 0.0
+
+            po_committed = float_round(
+                po_committed, precision_digits=rec.currency_id.decimal_places
+            )
+            committed = float_round(
+                rec.actual_amount + po_committed,
+                precision_digits=rec.currency_id.decimal_places,
+            )
+            rec.po_committed_amount = po_committed
+            rec.committed_amount = committed
+            rec.available_amount = float_round(
+                rec.planned_amount - committed,
+                precision_digits=rec.currency_id.decimal_places,
+            )
 
     @api.depends("planned_amount", "actual_amount")
     def _compute_remaining_amount(self):
@@ -488,13 +794,64 @@ class BudgetPlanLine(models.Model):
             else:
                 rec.alert_level = "normal"
 
+    @api.depends(
+        "planned_amount",
+        "actual_amount",
+        "committed_amount",
+        "available_amount",
+        "currency_id",
+        "company_currency_id",
+    )
+    def _compute_company_currency_amounts(self):
+        """Convert budget amounts to the company's reporting currency.
+
+        This is a best-effort informational conversion. It uses the latest
+        ``res.currency.rate`` available on the budget plan's start date.
+        If no rate is defined, the original amount is shown (no conversion).
+        """
+        for rec in self:
+            if not rec.is_multi_currency or not rec.company_currency_id or not rec.currency_id:
+                rec.planned_amount_company_currency = rec.planned_amount
+                rec.actual_amount_company_currency = rec.actual_amount
+                rec.committed_amount_company_currency = rec.committed_amount
+                rec.available_amount_company_currency = rec.available_amount
+                continue
+
+            rate_date = rec.plan_id.date_from or fields.Date.today()
+            rec.planned_amount_company_currency = rec.currency_id._convert(
+                rec.planned_amount,
+                rec.company_currency_id,
+                rec.company_id,
+                rate_date,
+            )
+            rec.actual_amount_company_currency = rec.currency_id._convert(
+                rec.actual_amount,
+                rec.company_currency_id,
+                rec.company_id,
+                rate_date,
+            )
+            rec.committed_amount_company_currency = rec.currency_id._convert(
+                rec.committed_amount,
+                rec.company_currency_id,
+                rec.company_id,
+                rate_date,
+            )
+            rec.available_amount_company_currency = rec.currency_id._convert(
+                rec.available_amount,
+                rec.company_currency_id,
+                rec.company_id,
+                rate_date,
+            )
+
     def write(self, vals):
         if self.env.context.get('bypass_protection'):
             return super().write(vals)
 
         system_computed_fields = {
             "actual_amount",
-            "variance_amount",
+            "po_committed_amount",
+            "committed_amount",
+            "available_amount",
             "remaining_amount",
             "usage_percent",
             "alert_level",

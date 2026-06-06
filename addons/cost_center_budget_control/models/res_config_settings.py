@@ -23,6 +23,15 @@ class ResConfigSettings(models.TransientModel):
              "warning_only logs alerts to chatter; blocking halts the posting."
     )
 
+    budget_block_on_purchase = fields.Boolean(
+        string="Block Purchase Orders over Budget",
+        config_parameter="cost_center_budget_control.block_on_purchase",
+        default=False,
+        help="If enabled, RFQ confirmation fails when a Purchase Order would push "
+             "the budget line over the blocking threshold. Off by default to avoid "
+             "disrupting standard procurement workflows."
+    )
+
     budget_warning_threshold = fields.Float(
         string="Warning Threshold (%)",
         config_parameter="cost_center_budget_control.warning_threshold",

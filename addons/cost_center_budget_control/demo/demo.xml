@@ -24,14 +24,14 @@
         <record id="demo_budget_user" model="res.users">
             <field name="name">Demo Budget User</field>
             <field name="login">demouser</field>
-            <field name="company_ids" eval="[(4, ref('demo_company')), (4, ref('demo_company_2'))]"/>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company'), ref('demo_company'), ref('demo_company_2')])]"/>
             <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_user'))]"/>
         </record>
 
         <record id="demo_budget_manager" model="res.users">
             <field name="name">Demo Budget Manager</field>
             <field name="login">demomanager</field>
-            <field name="company_ids" eval="[(4, ref('demo_company')), (4, ref('demo_company_2'))]"/>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company'), ref('demo_company'), ref('demo_company_2')])]"/>
             <field name="groups_id" eval="[(4, ref('cost_center_budget_control.group_budget_manager')),
                                        (4, ref('cost_center_budget_control.group_budget_override_manager'))]"/>
         </record>
@@ -92,13 +92,13 @@
             <field name="name">General Expenses Demo</field>
             <field name="code">600000</field>
             <field name="account_type">expense</field>
-            <field name="company_id" ref="demo_company"/>
+            <field name="company_ids" eval="[(6, 0, [ref('demo_company')])]"/>
         </record>
         <record id="account_expenses_general_eu_demo" model="account.account">
             <field name="name">General Expenses EU</field>
             <field name="code">600001</field>
             <field name="account_type">expense</field>
-            <field name="company_id" ref="demo_company_2"/>
+            <field name="company_ids" eval="[(6, 0, [ref('demo_company_2')])]"/>
         </record>
 
         <!--
@@ -127,6 +127,7 @@
         <record id="budget_plan_q1_sales_demo" model="budget.plan">
             <field name="name">Q1 Sales Budget (NA)</field>
             <field name="cost_center_id" ref="cost_center_sales_dept_demo"/>
+            <field name="company_id" ref="demo_company"/>
             <field name="date_from">2026-01-01</field>
             <field name="date_to">2026-03-31</field>
             <field name="state">approved</field>
@@ -136,6 +137,7 @@
         <record id="budget_plan_q1_sales_eu_demo" model="budget.plan">
             <field name="name">Q1 Sales Budget (EU)</field>
             <field name="cost_center_id" ref="cost_center_sales_eu_demo"/>
+            <field name="company_id" ref="demo_company_2"/>
             <field name="date_from">2026-01-01</field>
             <field name="date_to">2026-03-31</field>
             <field name="state">approved</field>

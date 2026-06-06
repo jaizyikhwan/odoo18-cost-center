@@ -36,6 +36,7 @@ pre {
     overflow-x: auto;
 }
 code { background: #f5f5f5; padding: 1px 4px; border-radius: 2px; }
+.mermaid { text-align: center; margin: 24px 0; }
 </style>
 </head>
 <body>
@@ -46,29 +47,31 @@ code { background: #f5f5f5; padding: 1px 4px; border-radius: 2px; }
     <span class="badge">Odoo 18 CE</span>
     <span class="badge">LGPL-3</span>
     <span class="badge">OCA-style</span>
-    <span class="badge">v18.0.1.0.0</span>
+    <span class="badge">v18.0.2.0.0</span>
 </p>
 
 <p>
 Enterprise-grade cost center hierarchy management, workflow-driven budget
-planning, real-time budget utilization tracking, and proactive threshold
-control &mdash; built specifically for Odoo 18 Community Edition following
-OCA structural conventions.
+planning, real-time budget utilization tracking, PO committed amount
+monitoring, and immutable budget revision chains &mdash; built specifically
+for Odoo 18 Community Edition following OCA structural conventions.
 </p>
 
 <h2>Why this module?</h2>
 
 <p>
-Standard Odoo analytic accounting excels at cost tracking but lacks native
-mechanisms to enforce <strong>department-level budget limits</strong> before
-overspending occurs. Managers are forced to rely on retroactive reports that
-only highlight overruns <em>after</em> transactions are posted.
+Odoo 18 Community Edition ships with native <code>account.budget</code> for
+<em>visibility</em>: aggregated Achieved amount, threshold management in
+reports, and Committed column. That's good for reporting but stops at the
+accounting layer.
 </p>
 
 <p>
-This module fills that gap by validating transactions in real time during
-the posting workflow &mdash; checking projected expenditures against
-approved departmental budgets <strong>before</strong> finalizing entries.
+This module adds the <strong>enforcement layer</strong> Odoo 18 CE doesn't
+have: hard posting-block on overrun, role-based override governance,
+hierarchical cost center tree, programmatic overhead allocation, PO
+committed tracking with opt-in hard block, and a proper budget revision
+workflow with immutable version chains.
 </p>
 
 <h2>Key Features</h2>
@@ -77,15 +80,18 @@ approved departmental budgets <strong>before</strong> finalizing entries.
     <li>Hierarchical cost centers (parent-child)</li>
     <li>Workflow-driven budget plans (state machine)</li>
     <li>Real-time <code>actual_amount</code> aggregation (JSONB SQL)</li>
+    <li><strong>PO Committed Amount tracking</strong> (opt-in hard block)</li>
+    <li><strong>Budget Revision with immutable chain</strong></li>
     <li>Programmatic overhead allocation engine</li>
     <li>Balanced journal entry generation</li>
     <li>Idempotent allocation references</li>
     <li>Configurable threshold validation (70/90/100%)</li>
-    <li>Role-based budget override controls</li>
+    <li>Role-based budget override controls (group, not context)</li>
     <li>Multi-company isolation (record rules)</li>
     <li>Analytic distribution integration</li>
     <li>Database indexes (incl. GIN on JSONB)</li>
-    <li>Pivot / graph reporting views</li>
+    <li>Pivot / graph / QWeb PDF reporting</li>
+    <li>Mail template over-budget notifications</li>
 </ul>
 
 <h2>Architecture Pillars</h2>
@@ -93,28 +99,76 @@ approved departmental budgets <strong>before</strong> finalizing entries.
 <h3>1. Workflow Discipline</h3>
 <p>
 Budget plans follow a strict state machine: <code>Draft &rarr; Submitted
-&rarr; Approved &rarr; Closed / Cancelled</code>. Approved plans are
-locked against modifications to protect historical records.
+&rarr; Approved &rarr; Revised / Closed / Cancelled</code>. Approved plans
+are locked against modifications to protect historical records. Revised
+plans are immutable; the active budget is the latest revision.
 </p>
 
-<h3>2. Ledger Accuracy</h3>
+<h3>2. Hard Enforcement with Role-Based Override</h3>
+<p>
+When the budget control mode is <code>blocking</code>, posting a journal
+entry that would exceed the blocking threshold raises <code>UserError</code>
+<em>before</em> the move is finalized. Override is granted by membership
+in the <code>group_budget_override_manager</code> security group &mdash; not
+by a context flag that could be set by client code. Every override is
+logged in the document chatter.
+</p>
+
+<h3>3. PO Committed Amount Integration</h3>
+<p>
+Confirmed-but-unbilled Purchase Order lines are aggregated into budget
+lines as <code>po_committed_amount</code>. The total
+<code>committed_amount = actual_amount + po_committed_amount</code> mirrors
+Odoo 18 Enterprise's <code>Committed</code> column. An opt-in setting
+(<code>Block Purchase Orders</code>) can extend the same hard-block
+enforcement to RFQ confirmation.
+</p>
+
+<h3>4. Budget Revision Chain</h3>
+<p>
+Approved budgets can be revised mid-period. The original is marked
+<code>revised</code> (immutable history); a fresh editable clone is
+created, linked via <code>parent_revision_id</code>, and renamed with
+a <code>(Rev N)</code> suffix. The chain is fully auditable.
+</p>
+
+<div class="mermaid">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: Submit
+    Submitted --> Draft: Reject
+    Submitted --> Approved: Approve
+    Approved --> Revised: Revise (clone + original locked)
+    Revised --> [*]
+    Approved --> Closed: Close
+    Submitted --> Cancelled: Cancel
+    Approved --> Cancelled: Cancel
+    Closed --> [*]
+    Cancelled --> [*]
+</pre>
+</div>
+
+<h3>5. Ledger Accuracy</h3>
 <p>
 Programmatic journal entries are perfectly balanced. Rounding residuals are
 absorbed by the final target line. Idempotency is enforced at the database
 level via deterministic reference keys.
 </p>
 
-<h3>3. Multi-Company Safety</h3>
+<h3>6. Multi-Company Safety</h3>
 <p>
 Every model declares <code>_check_company_auto = True</code> at the module
 level. Cross-company accounting references are blocked at the ORM layer.
 </p>
 
-<h3>4. Performance-Aware Aggregation</h3>
+<h3>7. Performance-Aware Aggregation</h3>
 <p>
-<code>actual_amount</code> aggregation uses parameterized JSONB queries
-against <code>account_move_line.analytic_distribution</code> with a
-custom GIN index installed via <code>post_init_hook</code>.
+<code>actual_amount</code> and <code>po_committed_amount</code> aggregation
+uses parameterized JSONB queries against
+<code>account_move_line.analytic_distribution</code> and
+<code>purchase_order_line.analytic_distribution</code> with a custom GIN
+index installed via <code>post_init_hook</code>.
 </p>
 
 <h2>Technical Stack</h2>
@@ -124,6 +178,8 @@ custom GIN index installed via <code>post_init_hook</code>.
     <li>PostgreSQL 16 (JSONB queries + GIN indexing)</li>
     <li>Python 3.11+</li>
     <li>OCA-style module structure</li>
+    <li>Dependencies: <code>base</code>, <code>account</code>,
+        <code>analytic</code>, <code>mail</code>, <code>purchase</code></li>
 </ul>
 
 <h2>Installation</h2>
@@ -144,6 +200,7 @@ real-time local file changes to be reflected immediately on upgrade.
     <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/README.md">Full README</a></li>
     <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/readme/USAGE.md">Usage Guide</a></li>
     <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/readme/ROADMAP.md">Roadmap</a></li>
+    <li><a href="https://github.com/jaizyikhwan/odoo18-cost-center/blob/main/CHANGELOG.md">Changelog</a></li>
 </ul>
 
 <h2>Credits</h2>

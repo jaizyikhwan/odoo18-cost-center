@@ -53,6 +53,9 @@
                     <setting string="Activity Scheduling" help="Schedule activities for budget managers when critical thresholds are exceeded.">
                         <field name="budget_activity_enabled"/>
                     </setting>
+                    <setting string="Block Purchase Orders" help="If enabled, RFQ confirmation fails when a PO would push the budget over the blocking threshold. Off by default.">
+                        <field name="budget_block_on_purchase"/>
+                    </setting>
                 </block>
             </xpath>
         </field>

@@ -30,16 +30,6 @@ class BudgetAllocation(models.Model):
         tracking=True,
     )
 
-    target_cost_center_ids = fields.Many2many(
-        "cost.center",
-        "budget_allocation_cost_center_rel",
-        "allocation_id",
-        "cost_center_id",
-        string="Target Cost Centers",
-        check_company=True,
-        tracking=True,
-    )
-
     line_ids = fields.One2many(
         "budget.allocation.line",
         "allocation_id",
@@ -135,6 +125,31 @@ class BudgetAllocation(models.Model):
         store=True,
     )
 
+    is_recurring = fields.Boolean(
+        string="Recurring",
+        default=False,
+        tracking=True,
+        help="If enabled, a fresh allocation is auto-created at the configured "
+             "interval. The original allocation acts as a template.",
+    )
+    recurring_interval_months = fields.Integer(
+        string="Interval (Months)",
+        default=1,
+        help="Number of months between auto-created recurring allocations. "
+             "Minimum 1, maximum 12.",
+    )
+    last_run_date = fields.Date(
+        string="Last Run",
+        readonly=True,
+        help="Date when the most recent recurring allocation was created.",
+    )
+    recurring_count = fields.Integer(
+        string="Recurrences Created",
+        readonly=True,
+        default=0,
+        help="Number of recurring allocations auto-created from this template.",
+    )
+
     # -------------------------------------------------------------------------
     # CONSTRAINTS
     # -------------------------------------------------------------------------
@@ -144,6 +159,12 @@ class BudgetAllocation(models.Model):
         for rec in self:
             if rec.amount_base <= 0.0:
                 raise ValidationError(_("Base Amount must be strictly positive."))
+
+    @api.constrains("recurring_interval_months")
+    def _check_recurring_interval(self):
+        for rec in self:
+            if rec.is_recurring and (rec.recurring_interval_months < 1 or rec.recurring_interval_months > 12):
+                raise ValidationError(_("Recurring interval must be between 1 and 12 months."))
 
     @api.depends("line_ids", "line_ids.cost_center_id", "line_ids.percentage")
     def _compute_allocation_rules(self):
@@ -282,7 +303,7 @@ class BudgetAllocation(models.Model):
             repr(sorted((self.allocation_rules or {}).items())).encode()
         ).hexdigest()[:10]
         deterministic_ref = (
-            f"ALLOC/{self.company_id.id}/{self.id}/{self.source_cost_center_id.id}/"
+            f"ALLOC/{self.company_id.id}/{self.source_cost_center_id.id}/"
             f"{self.allocation_date}/{rule_fingerprint}"
         )
 
@@ -358,3 +379,61 @@ class BudgetAllocation(models.Model):
             if rec.state == "posted":
                 raise UserError(_("You cannot delete a posted allocation record."))
         return super().unlink()
+
+    # -------------------------------------------------------------------------
+    # RECURRING ALLOCATIONS
+    # -------------------------------------------------------------------------
+
+    @api.model
+    def _cron_create_recurring_allocations(self):
+        """Scheduled action: create recurring allocations when due.
+
+        For every allocation with ``is_recurring=True`` and state in
+        ('draft', 'posted'), if the last run was more than
+        ``recurring_interval_months`` ago, clone the allocation and advance
+        the date by one interval. The clone starts in 'draft' state and
+        inherits the same lines, accounts, and percentages.
+        """
+        from dateutil.relativedelta import relativedelta
+        today = fields.Date.today()
+        templates = self.search([("is_recurring", "=", True)])
+        created = 0
+        for tpl in templates:
+            interval = max(1, min(12, tpl.recurring_interval_months or 1))
+            next_date = tpl.last_run_date or tpl.allocation_date
+            if not next_date:
+                continue
+            # Calculate the next due date
+            if isinstance(next_date, str):
+                next_date = fields.Date.from_string(next_date)
+            due_date = next_date + relativedelta(months=interval)
+            if due_date > today:
+                continue
+
+            new_allocation = tpl.copy({
+                "name": _("%s (Recurring)") % tpl.name,
+                "allocation_date": due_date,
+                "state": "draft",
+                "move_id": False,
+                "reversal_move_id": False,
+                "is_recurring": False,
+                "last_run_date": False,
+                "recurring_count": 0,
+                "line_ids": [(0, 0, {
+                    "cost_center_id": line.cost_center_id.id,
+                    "percentage": line.percentage,
+                }) for line in tpl.line_ids],
+            })
+            tpl.write({
+                "last_run_date": today,
+                "recurring_count": tpl.recurring_count + 1,
+            })
+            new_allocation.message_post(body=_(
+                "Auto-created from recurring template '%s' (run #%s).")
+                % (tpl.name, tpl.recurring_count + 1)
+            )
+            created += 1
+
+        if created:
+            _logger.info("Recurring allocation cron: created %s allocations.", created)
+        return created

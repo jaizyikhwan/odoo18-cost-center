@@ -6,6 +6,7 @@ from . import budget_plan
 from . import allocation
 from . import allocation_line
 from . import account_move
+from . import purchase_order
 from . import res_config_settings
 
 

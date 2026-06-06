@@ -14,6 +14,13 @@
                             <t t-esc="plan.name"/>
                         </h4>
 
+                        <div t-if="plan.revision_number > 1" class="alert alert-warning mt-3" style="border-left: 4px solid #fd7e14; background-color: #fff3cd; padding: 8px 12px;">
+                            <strong>Revision <t t-esc="plan.revision_number"/></strong>
+                            &#8212; this budget is a revision of
+                            <strong><t t-esc="plan.parent_revision_id.name"/></strong>.
+                            The original is preserved as immutable history.
+                        </div>
+
                         <table class="table table-sm table-borderless mt-4" style="width:100%;">
                             <tr>
                                 <td style="width:20%;"><strong>Cost Center:</strong></td>
@@ -54,13 +61,20 @@
 
                         <t t-set="total_planned" t-value="0"/>
                         <t t-set="total_actual" t-value="0"/>
-                        <t t-set="total_variance" t-value="0"/>
+                        <t t-set="total_po_committed" t-value="0"/>
+                        <t t-set="total_committed" t-value="0"/>
+                        <t t-set="total_available" t-value="0"/>
+                        <t t-set="total_remaining" t-value="0"/>
                         <t t-foreach="plan.line_ids" t-as="line">
                             <t t-set="total_planned" t-value="total_planned + line.planned_amount"/>
                             <t t-set="total_actual" t-value="total_actual + line.actual_amount"/>
-                            <t t-set="total_variance" t-value="total_variance + line.variance_amount"/>
+                            <t t-set="total_po_committed" t-value="total_po_committed + line.po_committed_amount"/>
+                            <t t-set="total_committed" t-value="total_committed + line.committed_amount"/>
+                            <t t-set="total_available" t-value="total_available + line.available_amount"/>
+                            <t t-set="total_remaining" t-value="total_remaining + line.remaining_amount"/>
                         </t>
                         <t t-set="overall_usage" t-value="(total_actual / total_planned * 100) if total_planned else 0"/>
+                        <t t-set="overall_committed_pct" t-value="(total_committed / total_planned * 100) if total_planned else 0"/>
 
                         <h5 class="mt-4">Budget Lines</h5>
                         <table class="table table-sm table-bordered" style="width:100%;">
@@ -69,7 +83,9 @@
                                     <th>Account</th>
                                     <th class="text-end">Planned</th>
                                     <th class="text-end">Actual</th>
-                                    <th class="text-end">Variance</th>
+                                    <th class="text-end">PO Committed</th>
+                                    <th class="text-end">Committed</th>
+                                    <th class="text-end">Available</th>
                                     <th class="text-end">Usage %</th>
                                     <th class="text-center">Status</th>
                                 </tr>
@@ -89,7 +105,13 @@
                                             <t t-esc="'{:.2f}'.format(line.actual_amount)"/>
                                         </td>
                                         <td class="text-end">
-                                            <t t-esc="'{:.2f}'.format(line.variance_amount)"/>
+                                            <t t-esc="'{:.2f}'.format(line.po_committed_amount)"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <t t-esc="'{:.2f}'.format(line.committed_amount)"/>
+                                        </td>
+                                        <td class="text-end" t-att-style="('color:#dc3545;font-weight:bold;' if line.available_amount &lt; 0 else '')">
+                                            <t t-esc="'{:.2f}'.format(line.available_amount)"/>
                                         </td>
                                         <td class="text-end">
                                             <t t-esc="'{:.1f}'.format(line.usage_percent)"/>%
@@ -121,7 +143,13 @@
                                         <t t-esc="'{:.2f}'.format(total_actual)"/>
                                     </td>
                                     <td class="text-end">
-                                        <t t-esc="'{:.2f}'.format(total_variance)"/>
+                                        <t t-esc="'{:.2f}'.format(total_po_committed)"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <t t-esc="'{:.2f}'.format(total_committed)"/>
+                                    </td>
+                                    <td class="text-end" t-att-style="('color:#dc3545;' if total_available &lt; 0 else '')">
+                                        <t t-esc="'{:.2f}'.format(total_available)"/>
                                     </td>
                                     <td class="text-end">
                                         <t t-esc="'{:.1f}'.format(overall_usage)"/>%

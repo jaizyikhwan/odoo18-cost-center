@@ -11,6 +11,26 @@
                     <field name="active" widget="boolean_button" options='{"term": "Archive", "active_text": "Active"}'/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_budget_plans" type="object"
+                                class="oe_stat_button" icon="fa-pie-chart">
+                            <field name="budget_plan_count" widget="statinfo"
+                                   string="Budget Plans"/>
+                        </button>
+                        <button name="action_view_budget_plans" type="object"
+                                class="oe_stat_button" icon="fa-money"
+                                invisible="budget_plan_count == 0">
+                            <field name="budget_plan_total_planned" widget="statinfo"
+                                   string="Total Planned"/>
+                        </button>
+                        <button name="action_view_over_budget_lines" type="object"
+                                class="oe_stat_button text-danger" icon="fa-exclamation-triangle"
+                                invisible="over_budget_line_count == 0">
+                            <field name="over_budget_line_count" widget="statinfo"
+                                   string="Over Budget"/>
+                        </button>
+                    </div>
+                    <field name="company_currency_id" invisible="1"/>
                     <group>
                         <group>
                             <field name="name"/>

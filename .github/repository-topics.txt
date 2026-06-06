@@ -1,0 +1,39 @@
+# Changelog
+#
+# All notable changes to this project will be documented in this file.
+#
+# The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+# and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+# ---------------------------------------------------------------------------
+# GitHub topics for repository discoverability
+# ---------------------------------------------------------------------------
+# Add these topics in the GitHub UI under Settings → General → Topics.
+# Topics help users find the repo via GitHub search.
+#
+# Top-priority (must add):
+#   odoo
+#   odoo-module
+#   odoo-18
+#   odoo-community
+#
+# Domain:
+#   budget-control
+#   cost-center
+#   accounting
+#   financial-management
+#   budget-enforcement
+#
+# Technical:
+#   python
+#   postgresql
+#   jsonb
+#   oca-style
+#
+# Industry:
+#   manufacturing
+#   government
+#   holding-company
+#   ngo
+#   education
+# ---------------------------------------------------------------------------

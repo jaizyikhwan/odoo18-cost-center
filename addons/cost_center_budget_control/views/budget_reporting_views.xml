@@ -38,7 +38,6 @@
                 <field name="planned_amount" type="measure" string="Planned"/>
                 <field name="actual_amount" type="measure" string="Actual"/>
                 <field name="remaining_amount" type="measure" string="Remaining"/>
-                <field name="variance_amount" type="measure" string="Variance"/>
                 <field name="usage_percent" type="measure" string="Avg Usage %" operator="avg"/>
 
                 <field name="plan_id" type="row"/>

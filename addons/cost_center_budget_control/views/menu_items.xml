@@ -85,4 +85,10 @@
               action="action_allocation_analysis"
               sequence="30"/>
 
+    <menuitem id="menu_cost_center_reporting_export"
+              name="Export Variance Report"
+              parent="menu_cost_center_reporting_root"
+              action="action_budget_variance_export"
+              sequence="40"/>
+
 </odoo>

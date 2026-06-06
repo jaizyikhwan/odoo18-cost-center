@@ -251,13 +251,16 @@ class AccountMove(models.Model):
             'cost_center_budget_control.mail_template_budget_over_budget',
             raise_if_not_found=False,
         )
-        if not template:
+        if not template or not template.model:
             return
 
-        # Use sudo() since mail.template sends emails as superuser
+        # Use sudo() since mail.template sends emails as superuser.
+        # budget.plan.line does not inherit mail.thread, so use send_mail
+        # with the record's id as res_id (Odoo 18 mail.template API).
         for line in exceeded_lines:
-            line.with_context(lang=self.env.lang).sudo().message_post_with_template(
-                template.id,
+            template.sudo().with_context(lang=self.env.lang).send_mail(
+                line.id,
+                force_send=True,
                 email_layout_xmlid='mail.mail_notification_light',
             )
 

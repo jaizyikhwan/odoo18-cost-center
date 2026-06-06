@@ -8,3 +8,4 @@ access_budget_plan_line_mgr,budget.plan.line.mgr,model_budget_plan_line,group_bu
 access_budget_allocation_user,budget.allocation.user,model_budget_allocation,group_budget_user,1,0,1,0
 access_budget_allocation_mgr,budget.allocation.mgr,model_budget_allocation,group_budget_manager,1,1,1,1
 access_budget_approval_wizard_user,budget.approval.wizard.user,model_budget_approval_wizard,group_budget_manager,1,1,1,0
+access_budget_variance_export_user,budget.variance.export.user,model_budget_variance_export,group_budget_user,1,1,1,0

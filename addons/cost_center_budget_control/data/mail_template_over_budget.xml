@@ -6,7 +6,7 @@
         <field name="model_id" ref="model_budget_plan_line"/>
         <field name="subject">Over-Budget Alert: {{ object.plan_id.cost_center_id.name }} - {{ object.account_id.name }}</field>
         <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
-        <field name="email_to">{{ object.plan_id.cost_center_id.manager_id.email if object.plan_id.cost_center_id.manager_id else user.email }}</field>
+        <field name="email_to">{{ object.plan_id.cost_center_id.responsible_id.email if object.plan_id.cost_center_id.responsible_id else user.email }}</field>
         <field name="body_html" type="html">
 <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
     <h2 style="color: #714B67;">Budget Threshold Exceeded</h2>
@@ -41,18 +41,30 @@
             </td>
         </tr>
         <tr style="background-color: #f5f5f5;">
-            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Planned Amount</strong></td>
-            <td style="padding: 8px; border: 1px solid #ddd;">
-                {{ format_amount(object.planned_amount, object.currency_id) }}
-            </td>
-        </tr>
-        <tr>
             <td style="padding: 8px; border: 1px solid #ddd;"><strong>Actual Amount</strong></td>
             <td style="padding: 8px; border: 1px solid #ddd;">
                 {{ format_amount(object.actual_amount, object.currency_id) }}
             </td>
         </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>PO Committed</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ format_amount(object.po_committed_amount, object.currency_id) }}
+            </td>
+        </tr>
         <tr style="background-color: #f5f5f5;">
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Committed (Total)</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {{ format_amount(object.committed_amount, object.currency_id) }}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Available</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd; color: {{ '#dc3545' if object.available_amount &lt; 0 else '#28a745' }}; font-weight: bold;">
+                {{ format_amount(object.available_amount, object.currency_id) }}
+            </td>
+        </tr>
+        <tr>
             <td style="padding: 8px; border: 1px solid #ddd;"><strong>Usage</strong></td>
             <td style="padding: 8px; border: 1px solid #ddd; color: #dc3545; font-weight: bold;">
                 {{ "%.1f"|format(object.usage_percent) }}%

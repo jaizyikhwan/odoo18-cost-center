@@ -32,7 +32,7 @@ class CostCenter(models.Model):
         ondelete="restrict",
         check_company=True
     )
-    parent_path = fields.Char(index=True, unaccent=False)
+    parent_path = fields.Char(index=True)
     child_ids = fields.One2many("cost.center", "parent_id", string="Children")
     
     responsible_id = fields.Many2one(
@@ -61,6 +61,28 @@ class CostCenter(models.Model):
         help="Linked analytic account for financial tracking. Created automatically if left empty."
     )
 
+    # Smart button counts (shown in form view button box)
+    budget_plan_count = fields.Integer(
+        string="Budget Plans",
+        compute="_compute_budget_plan_count",
+    )
+    budget_plan_total_planned = fields.Monetary(
+        string="Total Planned",
+        compute="_compute_budget_plan_count",
+        currency_field="company_currency_id",
+    )
+    over_budget_line_count = fields.Integer(
+        string="Over-Budget Lines",
+        compute="_compute_over_budget_line_count",
+        help="Number of budget lines where the available amount is negative.",
+    )
+    company_currency_id = fields.Many2one(
+        "res.currency",
+        string="Company Currency",
+        related="company_id.currency_id",
+        readonly=True,
+    )
+
     @api.depends("name", "parent_id.complete_name")
     def _compute_complete_name(self):
         for rec in self:
@@ -73,6 +95,73 @@ class CostCenter(models.Model):
     def _check_parent_recursion(self):
         if not self._check_recursion():
             raise ValidationError(_("Error! You cannot create recursive cost centers."))
+
+    def _compute_budget_plan_count(self):
+        """Count of budget plans + total planned amount (in company currency).
+
+        Total planned is summed from the latest revision of each plan only,
+        so historical revisions do not inflate the figure.
+        """
+        Plan = self.env["budget.plan"]
+        for rec in self:
+            plans = Plan.search([
+                ("cost_center_id", "=", rec.id),
+                ("is_latest_revision", "=", True),
+            ])
+            rec.budget_plan_count = len(plans)
+            if not plans:
+                rec.budget_plan_total_planned = 0.0
+                continue
+            # Convert planned totals to company currency (budget may differ)
+            total = 0.0
+            for plan in plans:
+                plan_total = sum(plan.line_ids.mapped("planned_amount"))
+                if plan.currency_id != rec.company_id.currency_id:
+                    plan_total = plan.currency_id._convert(
+                        plan_total,
+                        rec.company_id.currency_id,
+                        rec.company_id,
+                        plan.date_from or fields.Date.today(),
+                    )
+                total += plan_total
+            rec.budget_plan_total_planned = total
+
+    def _compute_over_budget_line_count(self):
+        Line = self.env["budget.plan.line"]
+        for rec in self:
+            rec.over_budget_line_count = Line.search_count([
+                ("plan_id.cost_center_id", "=", rec.id),
+                ("plan_id.is_latest_revision", "=", True),
+                ("available_amount", "<", 0),
+            ])
+
+    def action_view_budget_plans(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Budget Plans"),
+            "res_model": "budget.plan",
+            "view_mode": "list,form",
+            "domain": [
+                ("cost_center_id", "=", self.id),
+                ("is_latest_revision", "=", True),
+            ],
+            "context": {"default_cost_center_id": self.id, "search_default_latest_revision": 1},
+        }
+
+    def action_view_over_budget_lines(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Over-Budget Lines"),
+            "res_model": "budget.plan.line",
+            "view_mode": "list,form",
+            "domain": [
+                ("plan_id.cost_center_id", "=", self.id),
+                ("plan_id.is_latest_revision", "=", True),
+                ("available_amount", "<", 0),
+            ],
+        }
 
     @api.model_create_multi
     def create(self, vals_list):
