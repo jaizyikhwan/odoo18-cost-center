@@ -177,6 +177,34 @@ class TestBudgetAllocation(TransactionCase):
         alloc.action_allocate()
         self.assertEqual(alloc.move_id.id, move_id)
 
+    def test_action_cancel_creates_reversal_move(self):
+        """Cancelling a posted allocation must create a reversal entry
+        and mark the allocation cancelled (not leave it dangling)."""
+        alloc = self._create_allocation(
+            base_amount=500.0,
+            percentages=[(self.cc_tgt1, 100.0)],
+        )
+        alloc.action_allocate()
+        self.assertEqual(alloc.state, "posted")
+        self.assertTrue(alloc.move_id)
+        self.assertFalse(alloc.reversal_move_id,
+                         "reversal_move_id should be empty before cancel")
+
+        alloc.action_cancel()
+
+        self.assertEqual(alloc.state, "cancelled")
+        self.assertTrue(alloc.reversal_move_id,
+                        "Cancelling a posted allocation must create a reversal")
+        reversal = alloc.reversal_move_id
+        # Reversal should be a real posted move
+        self.assertEqual(reversal.state, "posted")
+        # Debits and credits of the reversal must still balance
+        self.assertAlmostEqual(
+            sum(reversal.line_ids.mapped("debit")),
+            sum(reversal.line_ids.mapped("credit")),
+            places=2,
+        )
+
 
 class TestCostCenter(TransactionCase):
     @classmethod

@@ -235,3 +235,94 @@ class TestBudgetControl(TransactionCase):
         # Company B should be independent; if no budgets exist, posting allowed
         move.action_post()
         self.assertEqual(move.state, 'posted')
+
+    def test_posting_with_empty_budget_plan(self):
+        """Posting a journal entry must not crash when the impacted
+        budget plan exists but has no line_ids."""
+        self.env['ir.config_parameter'].sudo().set_param(
+            'cost_center_budget_control.mode', 'blocking')
+        # Plan with no line_ids
+        empty_plan = self.env['budget.plan'].create({
+            'name': 'Empty Plan',
+            'cost_center_id': self.cc_a.id,
+            'company_id': self.company_a.id,
+            'date_from': '2025-01-01',
+            'date_to': '2025-03-31',
+        })
+        empty_plan.action_submit()
+        empty_plan.action_approve()
+        # No lines exist; posting a matched move must not raise
+        move = self.env['account.move'].create({
+            'journal_id': self.journal.id,
+            'date': '2025-02-15',
+            'company_id': self.company_a.id,
+            'line_ids': [
+                (0, 0, {'account_id': self.account_expense.id,
+                        'debit': 100.0, 'credit': 0.0,
+                        'analytic_distribution': {str(self.analytic_a.id): 100.0}}),
+                (0, 0, {'account_id': self.account_expense.id,
+                        'debit': 0.0, 'credit': 100.0}),
+            ],
+        })
+        # No threshold to violate (no planned_amount) so posting should succeed
+        move.action_post()
+        self.assertEqual(move.state, 'posted')
+        # Plan still has zero lines
+        self.assertEqual(len(empty_plan.line_ids), 0)
+
+    def test_alert_level_transitions_through_thresholds(self):
+        """alert_level must transition normal -> warning -> exceeded as
+        usage_percent crosses the configured thresholds."""
+        self.env['ir.config_parameter'].sudo().set_param(
+            'cost_center_budget_control.warning_threshold', '70.0')
+        self.env['ir.config_parameter'].sudo().set_param(
+            'cost_center_budget_control.critical_threshold', '90.0')
+        self.env['ir.config_parameter'].sudo().set_param(
+            'cost_center_budget_control.blocking_threshold', '100.0')
+
+        plan = self.env['budget.plan'].create({
+            'name': 'Alert Test',
+            'cost_center_id': self.cc_a.id,
+            'company_id': self.company_a.id,
+            'date_from': '2025-04-01',
+            'date_to': '2025-06-30',
+        })
+        bl = self.env['budget.plan.line'].create({
+            'plan_id': plan.id,
+            'account_id': self.account_expense.id,
+            'planned_amount': 1000.0,
+        })
+
+        def post_move(amount):
+            mv = self.env['account.move'].create({
+                'journal_id': self.journal.id,
+                'date': '2025-04-15',
+                'company_id': self.company_a.id,
+                'line_ids': [
+                    (0, 0, {'account_id': self.account_expense.id,
+                            'debit': amount, 'credit': 0.0,
+                            'analytic_distribution': {str(self.analytic_a.id): 100.0}}),
+                    (0, 0, {'account_id': self.account_expense.id,
+                            'debit': 0.0, 'credit': amount}),
+                ],
+            })
+            mv.action_post()
+            return mv
+
+        # Usage 20% -> normal
+        post_move(200.0)
+        bl.invalidate_recordset(['usage_percent', 'alert_level'])
+        self.assertAlmostEqual(bl.usage_percent, 20.0)
+        self.assertEqual(bl.alert_level, 'normal')
+
+        # Usage 80% -> warning (above 70% threshold)
+        post_move(600.0)
+        bl.invalidate_recordset(['usage_percent', 'alert_level'])
+        self.assertAlmostEqual(bl.usage_percent, 80.0)
+        self.assertEqual(bl.alert_level, 'warning')
+
+        # Usage 100% -> exceeded (at blocking threshold)
+        post_move(200.0)
+        bl.invalidate_recordset(['usage_percent', 'alert_level'])
+        self.assertAlmostEqual(bl.usage_percent, 100.0)
+        self.assertEqual(bl.alert_level, 'exceeded')
