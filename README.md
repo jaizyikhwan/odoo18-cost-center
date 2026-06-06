@@ -31,6 +31,54 @@ Buka `http://localhost:8018`, install **Cost Center & Budget Control** dari Apps
 
 ---
 
+## Alur Penggunaan
+
+Dua diagram ini merangkum workflow end-to-end: dari setup awal sampai
+penutupan periode, dan state machine budget plan-nya.
+
+### End-to-End Flow
+
+```mermaid
+graph LR
+    A[Install Module] --> B[Setup Cost Centers<br/>parent-child + analytic]
+    B --> C[Buat Budget Plan<br/>Draft + budget lines]
+    C --> D[Submit]
+    D --> E{Manager Review}
+    E -->|Reject| C
+    E -->|Approve| F[Plan Active]
+    F --> G[Post Journal Entry<br/>dengan analytic account]
+    G --> H{Budget Check}
+    H -->|OK / Warning| I[Posted]
+    H -->|> 100% blocking| J{Override?}
+    J -->|Group Override Manager| I
+    J -->|Tidak| K[Posting ditolak]
+    I --> L{Akhir periode}
+    L -->|Perlu revisi| M[Revise<br/>clone + lock original]
+    L -->|Tutup periode| N[Close]
+    M --> G
+    N --> O([Selesai])
+```
+
+### Budget Plan State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: Submit (User)
+    Submitted --> Draft: Reject (Manager)
+    Submitted --> Approved: Approve (Manager)
+    Submitted --> Cancelled: Cancel (Manager)
+    Draft --> Cancelled: Cancel (Manager)
+    Approved --> Revised: Revise (auto: clone)
+    Approved --> Closed: Close (Manager)
+    Approved --> Cancelled: Cancel (Manager)
+    Revised --> [*]
+    Closed --> [*]
+    Cancelled --> [*]
+```
+
+---
+
 ## Instalasi
 
 ### Prasyarat
@@ -53,7 +101,7 @@ Volume `addons/` ter-mount, jadi perubahan lokal langsung ter-reflect.
 
 ### Dependencies
 
-`base`, `account`, `analytic`, `mail`, `purchase` — semua bawaan Odoo 18 CE.
+`base`, `account`, `analytic`, `mail`, `purchase` (semua bawaan Odoo 18 CE).
 
 ---
 
