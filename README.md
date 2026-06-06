@@ -7,8 +7,6 @@
 
 Modul Odoo 18 CE untuk enforce budget per cost center. Transaksi yang akan lewat limit ditolak saat posting, dan PO yang masih open dihitung sebagai komitmen supaya tidak over-commit.
 
-Dokumentasi lengkap: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/INTEGRATION.md`](docs/INTEGRATION.md), [`readme/USAGE.md`](readme/USAGE.md).
-
 ---
 
 ## Quick Start
@@ -74,14 +72,10 @@ odoo-cost-center/
 │       ├── data/                  # mail template, ir.cron
 │       ├── demo/                  # sample data
 │       ├── static/img/            # screenshots
-│               └── tests/                 # 51 tests (test_performance, test_multi_company, ...)
-├── docs/                          # ARCHITECTURE, INTEGRATION, PERFORMANCE
-├── readme/                        # USAGE, ROADMAP, DESCRIPTION
+│       └── tests/                 # 51 tests (test_performance, test_multi_company, ...)
 ├── docker-compose.yml
 └── .env
 ```
-
-Detail teknis dan design rationale ada di [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Deployment guide dan migration path di [`docs/INTEGRATION.md`](docs/INTEGRATION.md).
 
 ---
 
@@ -111,6 +105,6 @@ Detail teknis dan design rationale ada di [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 
 ## Lisensi
 
-LGPL-3.0. Lihat [`LICENSE`](LICENSE).
+LGPL-3.0.
 
 Pengembang: [Muhammad Ikhwan Jaizy](https://github.com/jaizyikhwan)

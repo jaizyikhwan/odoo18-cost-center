@@ -5,25 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [18.0.2.3.0] - 2026-06-06 — Documentation Refresh
+## [18.0.2.3.0] - 2026-06-06 — Repo Trimming
 
-> **Release type**: Documentation only. No code change, no test impact.
+> **Release type**: Repository structure cleanup. No code change, no test
+> impact. README jadi satu-satunya entry point dokumentasi.
 
 ### Changed
-- README description line rewritten to be problem-first, less jargon.
-- `docs/ARCHITECTURE.md`, `docs/INTEGRATION.md`, dan `readme/USAGE.md`
-  diterjemahkan ke Bahasa Indonesia. Technical terms (ORM, JSONB, GIN
-  index, field dan model name) tetap dalam English. Code blocks, CLI
-  commands, dan identifier Odoo tidak diterjemahkan.
-- README "Fitur" section dirapikan: kurangi jargon implementasi
-  (parent_path, JSONB + GIN, SHA1 ref) dari opening clause supaya
-  lebih menjelaskan kegunaan, bukan mekanisme internal.
-- `docs/INTEGRATION.md` Section 1: emoji matrix (✅⚠️❌) diganti dengan
-  kata biasa (Cocok / Hati-hati / Konflik).
+- README tree diagram: `docs/` dan `readme/` lines dihapus.
+- README link ke docs internal dihapus (line 10, line 84).
+- README referensi LICENSE diganti dengan teks polos (lisensi tetap
+  LGPL-3.0).
 
 ### Removed
-- `docs/DEMO_RECORDING.md` — script untuk rekam demo GIF yang tidak
-  pernah dipakai (tidak ada `docs/demo.gif` di repo).
+- `docs/` directory (4 file: ARCHITECTURE, INTEGRATION, PERFORMANCE,
+  DEMO_RECORDING, plus untracked `project_brief.html`).
+- `readme/` directory (3 file: DESCRIPTION, ROADMAP, USAGE).
+- `LICENSE` (full LGPL-3 text; lisensi tetap mengikat karena disebut
+  eksplisit di README).
+- `CONTRIBUTING.md`.
+- `.github/CODEOWNERS`, `.github/ISSUE_TEMPLATE/`, dan
+  `.github/PULL_REQUEST_TEMPLATE.md`. Workflow CI tetap ada.
 
 ## [18.0.2.2.0] - 2026-06-06 — Bugfix & Cleanup Release
 
