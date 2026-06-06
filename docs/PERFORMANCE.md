@@ -1,8 +1,8 @@
 # Performance Benchmarks
 
-> **Status**: ✅ **Filled with real measurements**
+> **Status**: filled with real measurements
 >
-> **Last updated**: 2026-06-04 (Sesi 3, version 18.0.2.1.0)
+> **Last updated**: 2026-06-04
 
 This document records the actual performance characteristics of the
 Cost Center & Budget Control module. Numbers are produced by the

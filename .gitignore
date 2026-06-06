@@ -1,14 +1,9 @@
-# AI local workflow files
+# Local development notes (not for public repo)
+TASKS.md
 AI_CONTEXT.md
-AI_RULES.md
-
-# Docs for AI workflow, not intended for public consumption
-# (only project_brief.html and similar internal files)
 docs/project_brief.html
-.ai-temp/
-.ai-cache/
-
-# Public documentation (ARCHITECTURE, INTEGRATION, PERFORMANCE) is NOT ignored
+BACKUP_SHA.txt
+*.local.md
 
 # Python cache files
 __pycache__/

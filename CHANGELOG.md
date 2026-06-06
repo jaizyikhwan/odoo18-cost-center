@@ -59,9 +59,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **Release type**: Documentation, code enhancements, test coverage, and
 > portfolio polish. No breaking changes from v18.0.2.0.0.
 >
-> **Time spent**: ~16 hours over 4 work sessions (Documentation, Code,
-> Tests, Polish).
->
 > **Test count**: 26 → 34 (8 new tests, all passing). Pre-existing
 > 3 failures carried over from v18.0.2.0.0 (not regressions).
 

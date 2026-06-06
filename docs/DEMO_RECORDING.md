@@ -1,11 +1,10 @@
 # Demo Recording Guide
 
 > A 30-second screen recording that demonstrates the **hard-block** of
-> the Cost Center & Budget Control module. Suitable for README hero,
-> LinkedIn post, and product page.
+> the Cost Center & Budget Control module.
 
-This document provides the **script** (what to click, what to show) and
-**commands** (how to capture the screen and assemble the GIF).
+This document provides a script and the commands to capture and assemble
+the GIF.
 
 ---
 
@@ -202,7 +201,7 @@ image carousel.
 ## Where to Use the Demo
 
 - `docs/demo.gif` — committed, referenced in README
-- LinkedIn post (Variant A or B in `LINKEDIN_POST_VARIANTS.md`)
+- LinkedIn post
 - Personal portfolio site
 - Odoo Apps store listing (if you publish there later)
 - Conference talk slides (loop on a "demo" slide)
