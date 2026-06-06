@@ -5,7 +5,7 @@
 [![License: LGPL-3](https://img.shields.io/badge/License-LGPL--3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Version](https://img.shields.io/badge/version-18.0.2.2.0-green.svg)](CHANGELOG.md)
 
-Modul Odoo 18 Community Edition untuk governance cost center, enforcement budget real-time, dan PO committed tracking.
+Modul Odoo 18 CE untuk enforce budget per cost center. Transaksi yang akan lewat limit ditolak saat posting, dan PO yang masih open dihitung sebagai komitmen supaya tidak over-commit.
 
 Dokumentasi lengkap: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/INTEGRATION.md`](docs/INTEGRATION.md), [`readme/USAGE.md`](readme/USAGE.md).
 
@@ -25,11 +25,11 @@ Buka `http://localhost:8018`, install **Cost Center & Budget Control** dari Apps
 
 ## Fitur
 
-- **Hard-block di posting**. Transaksi yang akan melampaui budget threshold ditolak saat `_post()`, bukan cuma ditandai di laporan. Manager bisa bypass lewat group membership dengan audit trail di chatter.
-- **PO Committed tracking**. Confirmed-but-unbilled PO line diagregasi ke budget line. Field `actual_amount` + `po_committed_amount` + `available_amount` dihitung real-time via SQL JSONB + GIN index.
-- **Hierarchical cost center**. `cost.center` model dengan `parent_path` untuk struktur parent-child, plus auto-create analytic account.
-- **Overhead allocation engine**. Distribusi biaya antar cost center via balanced journal entry. SHA1 idempotency reference mencegah duplikasi, rounding residual diserap di baris terakhir supaya debit == kredit exact.
-- **Budget revision chain**. `Revise` bikin clone baru yang editable dan lock original sebagai immutable history, link via `parent_revision_id`.
+- **Hard-block di posting**. Transaksi yang akan lewat budget ditolak saat konfirmasi, bukan sekadar muncul di laporan. Manager bisa override lewat group dengan audit trail di chatter.
+- **PO Committed tracking**. PO yang sudah confirmed tapi belum ditagih tetap dihitung sebagai komitmen, jadi angka budget yang tersedia selalu real-time.
+- **Hierarki cost center**. Cost center bisa disusun parent-child (misal divisi → departemen → tim), dengan analytic account otomatis ter-link.
+- **Distribusi overhead**. Alokasi biaya antar cost center lewat journal entry yang balance (debit = kredit), dengan SHA1 ref supaya tidak dobel kalau diulang.
+- **Budget revision**. Revisi budget membuat clone baru yang editable, versi lama otomatis di-lock jadi history yang tidak bisa diedit.
 
 ---
 
@@ -74,8 +74,8 @@ odoo-cost-center/
 │       ├── data/                  # mail template, ir.cron
 │       ├── demo/                  # sample data
 │       ├── static/img/            # screenshots
-│       └── tests/                 # 48 tests (test_performance, test_multi_company, ...)
-├── docs/                          # ARCHITECTURE, INTEGRATION, PERFORMANCE, DEMO_RECORDING
+│               └── tests/                 # 51 tests (test_performance, test_multi_company, ...)
+├── docs/                          # ARCHITECTURE, INTEGRATION, PERFORMANCE
 ├── readme/                        # USAGE, ROADMAP, DESCRIPTION
 ├── docker-compose.yml
 └── .env

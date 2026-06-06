@@ -1,84 +1,83 @@
-# Integration Guide
+# Panduan Integrasi
 
-> **Audience**: System administrators, Odoo integrators, and developers
-> who need to deploy this module alongside other budget/accounting
-> modules.
+> **Audiens**: System administrator, Odoo integrator, dan developer
+> yang perlu deploy modul ini bareng modul budget/accounting lain.
 >
-> **Last updated**: 2026-06-04
+> **Terakhir diperbarui**: 2026-06-04
 
-This document describes how this module coexists with other budget
-modules in the Odoo ecosystem, and provides migration paths from
-vanilla Odoo or OCA's `account_budget_oca`.
+Dokumen ini menjelaskan bagaimana modul ini coexist dengan modul
+budget lain di ekosistem Odoo, dan menyediakan migration path dari
+vanilla Odoo atau OCA `account_budget_oca`.
 
 ---
 
-## 1. Quick Reference Matrix
+## 1. Matriks Referensi Cepat
 
-| Scenario | Compatible? | Recommended Approach |
+| Skenario | Status | Rekomendasi |
 |---|---|---|
-| **Vanilla Odoo 18 CE** (no budget module) | ✅ Fully compatible | Install this module — it provides everything vanilla lacks |
-| **OCA `account_budget_oca` (v18.0)** | ✅ Compatible | Install both. Use `account_budget_oca` for **multi-company crossovered budgets**, use this module for **per-cost-center enforcement** |
-| **OCA `account_budget_oca` + this module** | ✅ Best of both worlds | Recommended for organizations with complex multi-company budget needs |
-| **Native Odoo Enterprise `account.budget`** | ⚠️ Disabled by Enterprise | Enterprise module auto-disables if not licensed; this module is a CE alternative |
-| **Both Enterprise `account.budget` AND this module** | ❌ Conflict | OCA note: "incompatible". Disable Enterprise `account.budget` or this module |
+| **Vanilla Odoo 18 CE** (tanpa modul budget) | Cocok | Install modul ini — semua yang vanilla kurang tersedia di sini |
+| **OCA `account_budget_oca` (v18.0)** | Cocok | Install dua-duanya. Pakai `account_budget_oca` untuk **multi-company crossovered budgets**, pakai modul ini untuk **per-cost-center enforcement** |
+| **OCA `account_budget_oca` + modul ini** | Paling ideal | Rekomendasi untuk organisasi dengan kebutuhan multi-company budget yang kompleks |
+| **Native Odoo Enterprise `account.budget`** | Tidak bisa dipakai bersamaan | Modul Enterprise auto-disable kalau tidak berlisensi; modul ini adalah alternatif untuk CE |
+| **Dua-duanya: Enterprise `account.budget` DAN modul ini** | Konflik | Catatan OCA: "incompatible". Disable salah satu |
 
 ---
 
-## 2. Coexistence with OCA `account_budget_oca`
+## 2. Coexistence dengan OCA `account_budget_oca`
 
-OCA's `account_budget_oca` is a **great** module maintained by Odoo S.A.
-It provides:
+OCA `account_budget_oca` adalah modul yang cukup baik dan di-maintain
+oleh Odoo S.A. Fitur yang disediakan:
 
-- `crossovered.budget` (analytic budget definition)
+- `crossovered.budget` (definisi analytic budget)
 - `crossovered.budget.lines` (planned/actual/practical amount)
-- 3 built-in QWeb reports
+- 3 QWeb report bawaan
 - Multi-company support
 
-This module provides **complementary** features:
+Modul ini menyediakan fitur **komplementer**:
 
-- Per-cost-center enforcement (not per-analytic)
-- Hard-block at posting
+- Per-cost-center enforcement (bukan per-analytic)
+- Hard-block di posting
 - PO committed tracking
 - Allocation engine
 - Revision chain
 
-### 2.1 Installation Order
+### 2.1 Urutan Instalasi
 
-**No specific order required.** Both modules can be installed
-independently:
+**Tidak ada urutan khusus.** Dua modul bisa di-install independen:
 
 ```bash
-# Either order works
+# Dua-dua urutan jalan
 odoo-bin -d mydb -i account_budget_oca,cost_center_budget_control
-# OR
+# atau
 odoo-bin -d mydb -i cost_center_budget_control,account_budget_oca
 ```
 
-After installation, both module sets are active and don't conflict.
+Setelah instalasi, dua set modul aktif bersamaan tanpa konflik.
 
-### 2.2 Data Model Coexistence
+### 2.2 Coexistence Data Model
 
-| Concept | `account_budget_oca` | This Module |
+| Konsep | `account_budget_oca` | Modul Ini |
 |---|---|---|
-| Budget definition | `crossovered.budget` | `budget.plan` |
-| Budget line | `crossovered.budget.lines` | `budget.plan.line` |
-| Org unit | `account.analytic.account` | `cost.center` (linked to analytic account) |
-| Actual amount | `practical_amount` (computed via `_compute_practical_amount`) | `actual_amount` (computed via SQL JSONB) |
-| Committed amount | (not in CE version) | `po_committed_amount`, `committed_amount` |
+| Definisi budget | `crossovered.budget` | `budget.plan` |
+| Baris budget | `crossovered.budget.lines` | `budget.plan.line` |
+| Unit org | `account.analytic.account` | `cost.center` (linked ke analytic account) |
+| Actual amount | `practical_amount` (compute via `_compute_practical_amount`) | `actual_amount` (compute via SQL JSONB) |
+| Committed amount | (tidak ada di versi CE) | `po_committed_amount`, `committed_amount` |
 
-**Note**: The two `actual` amounts are computed differently but should
-match (within tolerance) for the same analytic account + period. The
-`account_budget_oca` uses ORM search; this module uses SQL JSONB with
-GIN index. For very large datasets, this module's compute is faster.
+**Catatan**: dua `actual` amount dihitung dengan cara berbeda tapi
+seharusnya match (dalam toleransi) untuk analytic account + periode yang
+sama. `account_budget_oca` pakai ORM search; modul ini pakai SQL JSONB
+dengan GIN index. Untuk dataset besar, compute di modul ini lebih
+cepat.
 
-### 2.3 Optional: Sync Budget Plan ↔ Crossovered Budget
+### 2.3 Opsional: Sync Budget Plan ↔ Crossovered Budget
 
-If you want data to flow from `budget.plan` (this module) to
-`crossovered.budget` (OCA), you can add a sync hook in your custom
-module. Example:
+Kalau mau data mengalir dari `budget.plan` (modul ini) ke
+`crossovered.budget` (OCA), bisa tambah sync hook di modul custom.
+Contoh:
 
 ```python
-# In your custom module: models/budget_plan_sync.py
+# Di modul custom kamu: models/budget_plan_sync.py
 from odoo import models, api
 
 
@@ -87,7 +86,7 @@ class BudgetPlanSync(models.Model):
 
     crossovered_budget_id = fields.Many2one(
         "crossovered.budget",
-        help="Optional link to OCA crossovered.budget for cross-reporting",
+        help="Opsional link ke OCA crossovered.budget untuk cross-reporting",
     )
 
     @api.model_create_multi
@@ -95,84 +94,84 @@ class BudgetPlanSync(models.Model):
         plans = super().create(vals_list)
         for plan, vals in zip(plans, vals_list):
             if self.env.context.get("sync_to_oca_budget"):
-                # Create corresponding crossovered.budget
+                # Bikin crossovered.budget yang corresponding
                 cb = self.env["crossovered.budget"].create({
                     "name": plan.name,
                     "date_from": plan.date_from,
                     "date_to": plan.date_to,
-                    # ... other fields
+                    # ... field lain
                 })
                 plan.crossovered_budget_id = cb
         return plans
 ```
 
-This is **optional** and **not enabled by default**. Most users will
-find the two modules' reporting sufficient on their own.
+**Opsional** dan **tidak enable by default**. Kebanyakan user merasa
+reporting dari dua modul sudah cukup sendiri-sendiri.
 
 ---
 
-## 3. Coexistence with Odoo Enterprise `account.budget`
+## 3. Coexistence dengan Odoo Enterprise `account.budget`
 
-**OCA's documented note**: *"This module is incompatible with Odoo
-Enterprise account_budget module"*.
+**Catatan dokumentasi OCA**: *"Modul ini incompatible dengan modul
+Enterprise `account_budget` Odoo"*.
 
-This is because both modules:
+Karena dua modul sama-sama:
 
-- Use the `account.budget` XML ID
-- Override `account.move._post` to add budget checks
-- Define `crossovered.budget` (or similar) models
+- Pakai XML ID `account.budget`
+- Override `account.move._post` untuk tambah budget check
+- Definisikan model `crossovered.budget` (atau mirip)
 
-**Practical implication**: You cannot have both Enterprise
-`account.budget` AND this module active simultaneously.
+**Implikasi praktis**: tidak bisa punya Enterprise `account.budget` DAN
+modul ini aktif bersamaan.
 
-### 3.1 Which to Choose?
+### 3.1 Pilih yang Mana?
 
-| Choose Enterprise `account.budget` if: | Choose This Module if: |
+| Pilih Enterprise `account.budget` kalau: | Pilih Modul Ini kalau: |
 |---|---|
-| You already have Odoo Enterprise license | You're on Odoo Community |
-| You need Odoo's official support contract | You're comfortable with community/OCA support |
-| You need other Enterprise features (helpdesk, mobile, etc.) | You only need budget enforcement |
-| You need automated budget vs actual reports in pivot | You need **enforcement + allocation + revision** |
-| Your Odoo partner insists on Enterprise | You want LGPL-3 source-available |
+| Sudah punya lisensi Odoo Enterprise | Pakai Odoo Community |
+| Butuh kontrak support resmi Odoo | Nyaman dengan support community/OCA |
+| Butuh fitur Enterprise lain (helpdesk, mobile, dll.) | Cuma butuh budget enforcement |
+| Butuh automated budget vs actual report di pivot | Butuh **enforcement + allocation + revision** |
+| Partner Odoo kamu insist Enterprise | Mau LGPL-3 source-available |
 
-**Cost consideration**: Enterprise is ~$20-25/user/month. For an org
-with 50 users, that's $12,000-15,000/year just for budget module.
+**Pertimbangan biaya**: Enterprise sekitar $20-25/user/bulan. Untuk
+organisasi 50 user, itu $12.000-15.000/tahun untuk satu modul budget.
 
-This module: **free**, LGPL-3, source-available, OCA-style.
+Modul ini: **gratis**, LGPL-3, source-available, OCA-style.
 
-### 3.2 If You're Currently on Enterprise
+### 3.2 Kalau Sekarang Sedang di Enterprise
 
-To migrate from Enterprise `account.budget` to this module:
+Untuk migrasi dari Enterprise `account.budget` ke modul ini:
 
-1. **Disable** Enterprise `account.budget` module
-2. **Install** this module + OCA `account_budget_oca` (optional)
-3. **Migrate data** (see Section 5 below)
-4. **Validate** that reports match expectations
-
----
-
-## 4. Coexistence with OCA `account_budget_oca_usability`
-
-OCA has another module `account_budget_oca_usability` (by AvanzOSC)
-that adds pivot view for budget lines. It is:
-
-- **Compatible** with `account_budget_oca`
-- **Compatible** with this module (different models, no overlap)
-- Adds: pivot view, "Budget Lines" sub-menu
-
-You can install all three without issues.
+1. **Disable** modul Enterprise `account.budget`
+2. **Install** modul ini + OCA `account_budget_oca` (opsional)
+3. **Migrasi data** (lihat Section 5 di bawah)
+4. **Validasi** bahwa report sesuai ekspektasi
 
 ---
 
-## 5. Migration Path from Vanilla Odoo 18
+## 4. Coexistence dengan OCA `account_budget_oca_usability`
 
-If you currently use vanilla Odoo 18's `account.budget` and want to
-migrate to this module:
+OCA punya modul lain `account_budget_oca_usability` (oleh AvanzOSC)
+yang nambah pivot view untuk budget line. Statusnya:
 
-### 5.1 Pre-Migration Audit
+- **Cocok** dengan `account_budget_oca`
+- **Cocok** dengan modul ini (model berbeda, tidak overlap)
+- Nambah: pivot view, sub-menu "Budget Lines"
+
+Ketiganya bisa di-install bersamaan tanpa masalah.
+
+---
+
+## 5. Migration Path dari Vanilla Odoo 18
+
+Kalau saat ini pakai `account.budget` vanilla Odoo 18 dan mau migrasi
+ke modul ini:
+
+### 5.1 Audit Pra-Migrasi
 
 ```sql
--- Run in psql to audit existing budget data
+-- Run di psql untuk audit data budget yang ada
 SELECT
     b.name,
     b.date_from,
@@ -186,32 +185,32 @@ GROUP BY b.id
 ORDER BY b.date_from DESC;
 ```
 
-This gives you a baseline of what to migrate.
+Query ini kasih baseline apa yang perlu dimigrasi.
 
-### 5.2 Migration Script (Manual Process)
+### 5.2 Script Migrasi (Proses Manual)
 
-For each existing `account.budget` in vanilla:
+Untuk tiap `account.budget` yang ada di vanilla:
 
-1. Identify the analytic account(s) in `account.budget.line`
-2. Find or create a `cost.center` with matching `analytic_account_id`
-3. Create a new `budget.plan` for the period
-4. Create `budget.plan.line` for each `account.budget.line`:
+1. Identifikasi analytic account di `account.budget.line`
+2. Cari atau bikin `cost.center` dengan `analytic_account_id` yang match
+3. Bikin `budget.plan` baru untuk periodenya
+4. Bikin `budget.plan.line` untuk tiap `account.budget.line`:
    - `account_id` ← `account.budget.line.account_id`
    - `planned_amount` ← `account.budget.line.planned_amount`
-   - `name` ← description
-5. (Optional) Link via custom field for historical reference
+   - `name` ← deskripsi
+5. (Opsional) Link lewat field custom untuk referensi historis
 
-### 5.3 Sample Migration Code (Odoo Shell)
+### 5.3 Contoh Kode Migrasi (Odoo Shell)
 
 ```python
-# In Odoo shell (odoo-bin shell -d mydb)
+# Di Odoo shell (odoo-bin shell -d mydb)
 env = Environment(cr, SUPERUSER_ID, {})
 
-# Get all vanilla budgets
+# Ambil semua budget vanilla
 vanilla_budgets = env['account.budget'].search([('state', '!=', 'cancelled')])
 
 for vb in vanilla_budgets:
-    # Find or create cost center
+    # Cari atau bikin cost center
     analytic = vb.analytic_account_id
     cost_center = env['cost.center'].search([
         ('analytic_account_id', '=', analytic.id)
@@ -225,16 +224,16 @@ for vb in vanilla_budgets:
             'company_id': vb.company_id.id,
         })
 
-    # Create budget plan
+    # Bikin budget plan
     plan = env['budget.plan'].create({
         'name': f"[Migrated] {vb.name}",
         'cost_center_id': cost_center.id,
         'date_from': vb.date_from,
         'date_to': vb.date_to,
-        'state': 'approved',  # or 'submitted' if you want re-approval
+        'state': 'approved',  # atau 'submitted' kalau mau re-approval
     })
 
-    # Migrate lines
+    # Migrasi lines
     for vbl in vb.budget_line_ids:
         env['budget.plan.line'].create({
             'plan_id': plan.id,
@@ -247,142 +246,147 @@ for vb in vanilla_budgets:
     print(f"Migrated: {vb.name} → {plan.name}")
 ```
 
-### 5.4 Post-Migration Validation
+### 5.4 Validasi Pasca-Migrasi
 
-1. Compare `actual_amount` between vanilla and this module for same
-   period — should match within rounding tolerance
-2. Compare `planned_amount` totals — should match exactly
-3. Verify all `cost.center` records are linked to a valid
-   `analytic.account`
-4. Test threshold validation by posting a small JE
+1. Bandingkan `actual_amount` antara vanilla dan modul ini untuk periode
+   yang sama — harusnya match dalam toleransi rounding
+2. Bandingkan total `planned_amount` — harusnya match persis
+3. Verifikasi semua record `cost.center` ter-link ke
+   `account.analytic` yang valid
+4. Test threshold validation dengan posting JE kecil
 
 ---
 
-## 6. Cross-Module Conflict Resolution
+## 6. Resolusi Konflik Cross-Module
 
-If you encounter errors during install/upgrade:
+Kalau ketemu error saat install/upgrade:
 
-### 6.1 "Model already exists" Error
+### 6.1 Error "Model already exists"
 
-Means another module defines the same model. Likely candidates:
+Berarti ada modul lain yang definisikan model yang sama. Kandidat yang
+paling mungkin:
+
 - `account.budget` (Enterprise)
 - `account_budget_oca` (OCA)
 
-**Fix**: Uninstall the conflicting module first.
+**Fix**: Uninstall modul yang konflik dulu.
 
-### 6.2 "Field X already exists with different type"
+### 6.2 Error "Field X already exists with different type"
 
-Means another module defines the same field with different type.
-Example: both modules define `state` on a related model with different
-selection.
+Berarti ada modul lain yang definisikan field yang sama dengan tipe
+berbeda. Contoh: dua modul definisikan `state` di related model
+dengan selection yang berbeda.
 
-**Fix**: Check `__manifest__.py` of all installed modules; the
-conflicting one must be modified (not in scope for this guide).
+**Fix**: Cek `__manifest__.py` semua modul yang ter-install; modul
+yang konflik harus dimodifikasi (di luar scope panduan ini).
 
-### 6.3 Demo Data Conflict
+### 6.3 Konflik Demo Data
 
-This module's demo data uses IDs like `cost_center_*`, `budget_plan_*`.
-If another module uses the same external IDs, demo data fails to load.
+Demo data modul ini pakai ID seperti `cost_center_*`, `budget_plan_*`.
+Kalau modul lain pakai external ID yang sama, demo data gagal load.
 
-**Fix**: Use `noupdate="1"` on demo data, or rename XML IDs in one
-module.
+**Fix**: Pakai `noupdate="1"` di demo data, atau rename XML ID di salah
+satu modul.
 
 ---
 
 ## 7. Production Deployment Checklist
 
-Before deploying this module to production:
+Sebelum deploy modul ini ke production:
 
-- [ ] **Backup database** before any module install/upgrade
-- [ ] **Test in staging** with copy of production data
-- [ ] **Verify multi-company** isolation works for your setup
-- [ ] **Configure settings** (thresholds, override groups) before
-  enabling in production
-- [ ] **Audit existing users** for proper group assignment
-- [ ] **Set `block_on_purchase = False`** initially (opt-in only)
-- [ ] **Train finance team** on override workflow
-- [ ] **Set up monitoring** for `ir.config_parameter` for settings
-  changes
-- [ ] **Document your budget periods** (e.g., fiscal year start, period
-  alignment)
-- [ ] **Plan revision cycles** (when is Revise expected, by whom)
+- [ ] **Backup database** sebelum install/upgrade modul apapun
+- [ ] **Test di staging** dengan copy data production
+- [ ] **Verifikasi multi-company** isolation jalan untuk setup kamu
+- [ ] **Konfigurasi settings** (threshold, override group) sebelum
+       enable di production
+- [ ] **Audit user yang ada** untuk group assignment yang sesuai
+- [ ] **Set `block_on_purchase = False`** dulu (opt-in saja)
+- [ ] **Train tim finance** untuk workflow override
+- [ ] **Set up monitoring** untuk `ir.config_parameter` terkait perubahan
+       setting
+- [ ] **Dokumentasikan period budget** (misal fiscal year start,
+       alignment period)
+- [ ] **Plan revision cycle** (kapan Revise diharapkan, oleh siapa)
 
 ---
 
-## 8. API & Webhook Integration (Future)
+## 8. API & Webhook Integration (Mendatang)
 
-This module currently uses standard Odoo XML-RPC / JSON-RPC. No
-custom REST API is exposed. For external system integration:
+Modul ini saat ini pakai standar Odoo XML-RPC / JSON-RPC. Belum ada
+custom REST API. Untuk integrasi dengan sistem eksternal:
 
-| Need | Solution |
+| Kebutuhan | Solusi |
 |---|---|
-| Read budget status from BI tool | Use Odoo's `/xmlrpc/2/object` endpoint with `execute_kw` |
-| Trigger allocation from external scheduler | Create allocation via XML-RPC, call `action_allocate()` |
-| Webhook on threshold breach | Subscribe to `account.move` chatter via Odoo's bus (long-polling) |
-| Bulk import historical budgets | Use Odoo's standard `import` wizard on `budget.plan` |
+| Baca status budget dari BI tool | Pakai endpoint `/xmlrpc/2/object` Odoo dengan `execute_kw` |
+| Trigger allocation dari scheduler eksternal | Bikin allocation via XML-RPC, panggil `action_allocate()` |
+| Webhook saat threshold breach | Subscribe ke chatter `account.move` via bus Odoo (long-polling) |
+| Bulk import budget historis | Pakai wizard `import` standar Odoo di `budget.plan` |
 
-For more advanced needs, the module is extensible via `_inherit` on
-any model. See [`ARCHITECTURE.md` Section 4](ARCHITECTURE.md#4-extension-points).
+Untuk kebutuhan yang lebih advance, modul ini extensible lewat
+`_inherit` di model manapun. Lihat
+[`ARCHITECTURE.md` Section 4](ARCHITECTURE.md#4-extension-point).
 
 ---
 
-## 9. Frequently Asked Questions
+## 9. Pertanyaan yang Sering Ditanya
 
-### Q: Can I use this module without OCA `account_budget_oca`?
+### Q: Bisa pakai modul ini tanpa OCA `account_budget_oca`?
 
-A: Yes. This module is **standalone**. It does not require
-`account_budget_oca`. They are complementary but independent.
+A: Bisa. Modul ini **standalone**. Tidak mensyaratkan
+`account_budget_oca`. Keduanya komplementer tapi independen.
 
-### Q: Will this module auto-create a crossovered.budget when I create a
-budget.plan?
+### Q: Apakah modul ini auto-bikin `crossovered.budget` waktu saya bikin
+`budget.plan`?
 
-A: No. They are independent models. If you want sync, see Section 2.3
-above.
+A: Tidak. Keduanya model independen. Kalau mau sync, lihat
+Section 2.3 di atas.
 
-### Q: I'm on Odoo 17. Can I use this module?
+### Q: Saya di Odoo 17. Bisa pakai modul ini?
 
-A: No. The module targets Odoo 18.0 specifically due to:
-- `analytic_distribution` JSONB (v16+, but with v18-specific behaviors)
-- `_parent_store` API stable in v18
-- `account.move._post()` signature changes
+A: Tidak. Modul ini targetnya 18.0 secara spesifik karena:
 
-For Odoo 17, the module would need a separate branch. (Not currently
-maintained.)
+- `analytic_distribution` JSONB (v16+, tapi ada behavior spesifik v18)
+- API `_parent_store` stabil di v18
+- Perubahan signature `account.move._post()`
 
-### Q: Does this work with OCA `mis_builder`?
+Untuk Odoo 17, perlu branch terpisah. (Belum di-maintain saat ini.)
 
-A: Yes, they are independent modules. You can use `mis_builder` for
-advanced KPI dashboards on top of `budget.plan.line` data via
-`_compute_*` extension. No conflict.
+### Q: Apakah ini jalan dengan OCA `mis_builder`?
 
-### Q: What about multi-currency?
+A: Bisa, keduanya modul independen. `mis_builder` bisa dipakai untuk
+dashboard KPI advanced di atas data `budget.plan.line` lewat extension
+`_compute_*`. Tidak ada konflik.
 
-A: Supported in this module. Each `budget.plan` can have its own
-`currency_id` (defaults to company currency but can be overridden).
-SQL aggregate uses `currency_id` for grouping; conversion to company
-currency happens at display time.
+### Q: Bagaimana dengan multi-currency?
 
-### Q: How do I disable enforcement temporarily?
+A: Didukung di modul ini. Tiap `budget.plan` bisa punya `currency_id`
+sendiri (default ke company currency tapi bisa di-override). Agregasi
+SQL pakai `currency_id` untuk grouping; konversi ke company currency
+terjadi saat display.
 
-A: Set `cost_center_budget_control.enabled = False` via Settings
-(checkbox) or via shell:
+### Q: Bagaimana cara disable enforcement sementara?
+
+A: Set `cost_center_budget_control.enabled = False` lewat Settings
+(checkbox) atau lewat shell:
+
 ```python
 env['ir.config_parameter'].set_param(
     'cost_center_budget_control.enabled', False
 )
 ```
-The hard-block is bypassed; warnings are also disabled.
+
+Hard-block ke-bypass; warning juga ke-disable.
 
 ---
 
-## 10. Getting Help
+## 10. Butuh Bantuan
 
-If you encounter issues not covered here:
+Kalau ketemu issue yang tidak dibahas di sini:
 
-1. Check the [main README troubleshooting section](../README.md#troubleshooting)
-2. Search [GitHub Issues](https://github.com/jaizyikhwan/odoo18-cost-center/issues)
-3. Open a new issue with:
-   - Odoo version + commit hash
+1. Cek [bagian troubleshooting README utama](../README.md#troubleshooting)
+2. Cari di [GitHub Issues](https://github.com/jaizyikhwan/odoo18-cost-center/issues)
+3. Buka issue baru dengan info:
+   - Versi Odoo + commit hash
    - Steps to reproduce
-   - Expected vs actual behavior
-   - Module combination installed (this + which others)
+   - Ekspektasi vs actual
+   - Kombinasi modul yang ter-install (modul ini + yang lain)

@@ -1,23 +1,23 @@
-# Architecture Documentation
+# Dokumentasi Arsitektur
 
-> **Audience**: Senior Odoo developers, OCA reviewers, code reviewers, and
-> future maintainers who need to understand the design decisions and
-> extension points of this module.
+> **Audiens**: Senior Odoo developer, OCA reviewer, code reviewer, dan
+> maintainer selanjutnya yang perlu paham keputusan desain dan extension
+> point dari modul ini.
 >
-> **Last updated**: 2026-06-04
+> **Terakhir diperbarui**: 2026-06-04
 
-This document describes the internal architecture of the **Cost Center &
-Budget Control** module for Odoo 18 CE. It complements the README by
-explaining *why* design decisions were made, not just *what* the module
-does.
+Dokumen ini menjelaskan arsitektur internal modul **Cost Center & Budget
+Control** untuk Odoo 18 CE. Melengkapi README dengan menjelaskan
+*kenapa* keputusan desain diambil, bukan sekadar *apa* yang modul
+lakukan.
 
 ---
 
-## 1. Data Flow
+## 1. Diagram Aliran Data
 
-The module connects three native Odoo subsystems (analytic, accounting,
-purchase) with a new governance layer (cost center + budget plan +
-allocation).
+Modul ini menghubungkan tiga subsistem native Odoo (analytic,
+accounting, purchase) ke satu layer governance baru (cost center +
+budget plan + allocation).
 
 ```mermaid
 graph LR
@@ -50,25 +50,25 @@ graph LR
     style ALC fill:#714B67,color:#fff
 ```
 
-### Key Design Choice: Why a Separate `cost.center` Model?
+### Keputusan Desain: Kenapa Model `cost.center` Terpisah?
 
-Vanilla Odoo 18 provides `account.analytic.account` for transaction
-tagging. A senior reviewer might ask: *why not extend it instead of
-creating a new `cost.center` model?*
+Odoo 18 vanilla sudah punya `account.analytic.account` untuk tagging
+transaksi. Reviewer senior mungkin bertanya: *kenapa tidak extend saja,
+daripada bikin model `cost.center` baru?*
 
-**Answer: Single Responsibility Principle.**
+**Jawaban: Prinsip Single Responsibility.**
 
-| Concern | Owner in Vanilla Odoo | Owner in This Module |
+| Concern | Owner di Vanilla Odoo | Owner di Modul Ini |
 |---|---|---|
-| Transaction tagging (1 transaction = 1 analytic) | `account.analytic.account` | `account.analytic.account` (unchanged) |
-| Org structure (parent-child, manager, code) | ❌ (no native equivalent) | `cost.center` |
-| Budget definition per org unit | ❌ | `budget.plan` |
-| Budget enforcement (block at posting) | ❌ | `_validate_budget_control` |
+| Transaction tagging (1 transaksi = 1 analytic) | `account.analytic.account` | `account.analytic.account` (tidak berubah) |
+| Struktur org (parent-child, manager, code) | (tidak ada di vanilla) | `cost.center` |
+| Definisi budget per unit org | (tidak ada) | `budget.plan` |
+| Enforcement budget (block saat posting) | (tidak ada) | `_validate_budget_control` |
 
-We **bridge** the two via a new field `cost.center_id` on
-`account.analytic.account` (`models/account_analytic.py`). This is
-forward-only: existing `account.analytic.account` users can opt-in by
-linking their records to a `cost.center`.
+Kita bridge keduanya lewat field baru `cost_center_id` di
+`account.analytic.account` (`models/account_analytic.py`). Pendekatannya
+forward-only: user `account.analytic.account` yang sudah ada bisa
+opt-in dengan cara link record mereka ke `cost.center`.
 
 ---
 
@@ -106,22 +106,22 @@ stateDiagram-v2
     end note
 ```
 
-### ORM-Level State Protection (Critical Detail)
+### Proteksi State di Level ORM (Detail Penting)
 
-The state machine is **not just UI**. It's enforced at three layers:
+State machine ini bukan sekadar UI. Enforcement ada di tiga layer:
 
-1. **Form view** (`views/budget_plan_views.xml`): buttons invisible by state
-2. **`write()` override** (`models/budget_plan.py`): `PROTECTED_STATES` set
-   rejects modification when `state in (approved, revised, closed, cancelled)`
-3. **`unlink()` override**: rejects deletion when `state in (submitted,
+1. **Form view** (`views/budget_plan_views.xml`): tombol invisible sesuai state
+2. **`write()` override** (`models/budget_plan.py`): set `PROTECTED_STATES`
+   menolak modifikasi waktu `state in (approved, revised, closed, cancelled)`
+3. **`unlink()` override**: menolak deletion waktu `state in (submitted,
    approved, closed, cancelled)`
 
-This is the **defense in depth** approach — UI hides the action, but even
-direct ORM access via XML-RPC/API respects the state.
+Ini pendekatan **defense in depth** — UI menyembunyikan action-nya, tapi
+akses ORM langsung lewat XML-RPC/API tetap respect state-nya.
 
 ---
 
-## 3. Security Model — 3-Tier Group Hierarchy
+## 3. Model Security — Hierarki Group 3-Tier
 
 ```mermaid
 graph TD
@@ -135,52 +135,54 @@ graph TD
     style D fill:#dc3545,color:#fff
 ```
 
-| Group | Can Do | Cannot Do |
+| Group | Bisa | Tidak Bisa |
 |---|---|---|
-| **Budget User** | Create cost center, budget plan, allocation. Submit plan. View all. | Approve, override block, delete finalized record, modify submitted plan |
-| **Budget Manager** | All User + Approve, Reset, Close, Cancel, Revise, delete non-finalized | Override hard-block on posting |
-| **Override Manager** | All Manager + **Override hard-block** on JE/PO, receive scheduled activity for blocked transactions | (no further restriction) |
+| **Budget User** | Bikin cost center, budget plan, allocation. Submit plan. Lihat semua. | Approve, override block, hapus record yang sudah final, modifikasi plan yang sudah disubmit |
+| **Budget Manager** | Semua hak User + Approve, Reset, Close, Cancel, Revise, hapus record yang belum final | Override hard-block di posting |
+| **Override Manager** | Semua hak Manager + **Override hard-block** di JE/PO, terima scheduled activity untuk transaksi yang di-block | (tidak ada batasan lanjutan) |
 
-### Why Group-Based, Not Context-Based
+### Kenapa Group-Based, Bukan Context-Based
 
-A common Odoo anti-pattern is `with_context(budget_override=True)` to
-bypass validation. This is dangerous because:
+Anti-pattern yang umum di Odoo adalah
+`with_context(budget_override=True)` untuk bypass validasi. Ini
+berbahaya karena:
 
-1. Context can be set by **any client code** (including compromised
-   third-party modules)
-2. No audit trail — context is invisible
-3. Trivially exploited by malicious actors
+1. Context bisa di-set oleh **kode client manapun** (termasuk third-party
+   module yang compromised)
+2. Tidak ada audit trail — context invisible
+3. Trivial dieksploitasi pihak yang tidak berwenang
 
-This module uses **group membership** for override authorization:
-`_is_budget_override_allowed()` returns
+Modul ini pakai **group membership** untuk otorisasi override:
+`_is_budget_override_allowed()` return
 `user.has_group('cost_center_budget_control.group_budget_override_manager')`.
 Group membership:
 
-1. Requires admin action to grant
-2. Logged in chatter when used
-3. Visible in user form for auditing
-4. Required for `_validate_budget_control` bypass
+1. Butuh aksi admin untuk granted
+2. Tercatat di chatter waktu dipakai
+3. Visible di form user untuk auditing
+4. Required untuk bypass `_validate_budget_control`
 
 ---
 
-## 4. Extension Points
+## 4. Extension Point
 
-The module is designed to be extended without forking. Common extensions:
+Modul ini didesain untuk bisa di-extend tanpa forking. Extension yang
+umum:
 
-### 4.1 Add a Custom Cost Center Hierarchy Level
+### 4.1 Tambah Level Hierarki Cost Center
 
 ```python
 class CustomCostCenter(models.Model):
     _inherit = "cost.center"
 
     region_id = fields.Many2one("custom.region", string="Region")
-    # parent_id tree still works; Odoo stores full path in parent_path
+    # parent_id tree tetap jalan; Odoo simpan full path di parent_path
 ```
 
-The `_parent_store=True` mechanism handles arbitrary depth. Just add
-fields; no need to modify the tree.
+Mekanisme `_parent_store=True` handle kedalaman berapapun. Tinggal
+tambah field, tidak perlu ubah tree-nya.
 
-### 4.2 Add a Custom Override Condition
+### 4.2 Tambah Kondisi Override Custom
 
 ```python
 class CustomBudgetPlan(models.Model):
@@ -193,10 +195,10 @@ class CustomBudgetPlan(models.Model):
         )
 ```
 
-`super()._is_budget_override_allowed()` returns the standard
-group-based check; your extension adds an additional path.
+`super()._is_budget_override_allowed()` return standar group-based
+check; extension kamu tinggal nambah path tambahan.
 
-### 4.3 Extend the Allocation Engine
+### 4.3 Extend Allocation Engine
 
 ```python
 class CustomAllocation(models.Model):
@@ -204,15 +206,15 @@ class CustomAllocation(models.Model):
 
     def compute_allocation(self):
         res = super().compute_allocation()
-        # Add custom logic: e.g., apply tax adjustment per target
+        # Tambah logic custom: misal apply tax adjustment per target
         return res
 ```
 
-The allocation pipeline is a sequence of overridable methods:
+Pipeline allocation adalah sequence method yang bisa di-override:
 `compute_allocation()` → `build_journal_lines()` → `create_move()` →
-`post_move()`. Each can be extended or replaced.
+`post_move()`. Tiap method bisa di-extend atau di-replace.
 
-### 4.4 Add a New Computed Field to Budget Plan Line
+### 4.4 Tambah Computed Field di Budget Plan Line
 
 ```python
 class CustomBudgetPlanLine(models.Model):
@@ -225,21 +227,22 @@ class CustomBudgetPlanLine(models.Model):
 
     def _compute_custom_metric(self):
         for line in self:
-            line.custom_metric = line.actual_amount * 0.1  # example
+            line.custom_metric = line.actual_amount * 0.1  # contoh
 ```
 
-Add `@api.depends` if the field should be recomputed automatically.
+Tambah `@api.depends` kalau field-nya harus auto-recompute.
 
 ---
 
-## 5. Performance Design Rationale
+## 5. Performa — Rationale Desain
 
-### 5.1 Why SQL JSONB + GIN Index, Not ORM `.search()`?
+### 5.1 Kenapa SQL JSONB + GIN Index, Bukan ORM `.search()`?
 
-Computing `actual_amount` for 1,000 budget plan lines could naively be:
+Hitung `actual_amount` untuk 1.000 budget plan lines kalau naif bisa
+begini:
 
 ```python
-# ❌ Don't do this (N+1)
+# Jangan begini (N+1)
 for line in budget_lines:
     line.actual_amount = sum(
         move_line.balance
@@ -252,10 +255,10 @@ for line in budget_lines:
     )
 ```
 
-This triggers 1,000+ queries. For 1,000 lines × 1,000 JE lines, you get
-1M+ Python iterations. **Disaster.**
+Ini trigger 1.000+ query. Untuk 1.000 lines × 1.000 JE lines, dapat
+1 juta iterasi Python. **Disaster.**
 
-Instead, this module uses:
+Modul ini pakai:
 
 ```sql
 SELECT aml.account_id, SUM(aml.balance) AS total
@@ -268,20 +271,20 @@ WHERE aml.parent_state = 'posted'
 GROUP BY aml.account_id
 ```
 
-This is **1 query** for all 1,000 lines. The `analytic_distribution ?`
-operator uses the GIN index installed by `post_init_hook` (see
+Cukup **1 query** untuk semua 1.000 lines. Operator `analytic_distribution ?`
+pakai GIN index yang di-install oleh `post_init_hook` (lihat
 `models/post_init_sql.py`).
 
-### 5.2 Why Savepoint for PO Committed Compute?
+### 5.2 Kenapa Savepoint untuk PO Committed Compute?
 
-`_compute_committed_amount` runs a SQL query on `purchase_order_line`.
-If that query fails (e.g., `purchase` module not installed, table
-missing, schema race), the transaction is poisoned. The next code line
-that tries any DB operation (e.g., reading
-`rec.currency_id.decimal_places`) fails with
+`_compute_committed_amount` jalanin query SQL ke `purchase_order_line`.
+Kalau query-nya gagal (misal modul `purchase` belum di-install, tabel
+missing, race condition di schema), transaction jadi poisoned. Baris
+kode berikutnya yang coba operasi DB (misal baca
+`rec.currency_id.decimal_places`) akan gagal dengan
 `InFailedSqlTransaction`.
 
-The fix in `models/budget_plan.py:653-660`:
+Fix di `models/budget_plan.py:653-660`:
 
 ```python
 try:
@@ -292,122 +295,122 @@ except Exception:
     po_committed = 0.0
 ```
 
-The savepoint auto-rolls-back on failure, isolating the error to this
-one line. Subsequent code can still access `rec.currency_id` and other
-fields without poisoning.
+Savepoint auto-rollback kalau gagal, sehingga error terisolasi di satu
+line ini. Kode setelahnya tetap bisa akses `rec.currency_id` dan field
+lain tanpa kena poison.
 
-### 5.3 Why ORM-Level State Protection, Not View-Level?
+### 5.3 Kenapa Proteksi State di Level ORM, Bukan Level View?
 
-UI-level state protection (making fields `invisible` in form view) is
-**insufficient** because:
+Proteksi state di level UI (bikin field `invisible` di form view) tidak
+cukup karena:
 
-1. Direct ORM calls (XML-RPC, JSON-RPC, controllers) bypass view
-2. Programmatic `record.write({...})` works regardless of view
-3. State field itself can be modified directly
+1. Panggilan ORM langsung (XML-RPC, JSON-RPC, controller) bypass view
+2. `record.write({...})` programmatic jalan terlepas dari view
+3. Field `state` sendiri bisa dimodifikasi langsung
 
-The `write()` and `unlink()` overrides in `models/budget_plan.py`
-provide a **backend guarantee** that survives any UI change.
+Override `write()` dan `unlink()` di `models/budget_plan.py` kasih
+**backend guarantee** yang survive perubahan UI apapun.
 
-### 5.4 Why Batch Invalidate for PO Hooks?
+### 5.4 Kenapa Batch Invalidate untuk PO Hook?
 
-`purchase.order` recompute is triggered by 5 events:
+Recompute `purchase.order` di-trigger oleh 5 event:
 `button_confirm`, `button_cancel`, `action_rfq_send`, `write`,
-`unlink`. Each collects impacted budget lines via
-`_get_impacted_budget_lines_from_po_line()` (returns set of
-`budget.plan.line` records), then calls
+`unlink`. Tiap event kumpulkan budget line yang ter-impact lewat
+`_get_impacted_budget_lines_from_po_line()` (return set of
+`budget.plan.line` record), lalu panggil
 `_recompute_actual_amount_batch()` (invalidate cache, retrigger
-all 6 stored computes).
+semua 6 stored compute).
 
-This is O(impacted_lines), not O(all_lines). For a PO with 3 lines
-matching 2 budget plan lines, we recompute 2 lines, not 100.
+Ini O(impacted_lines), bukan O(all_lines). Untuk PO dengan 3 lines
+matching 2 budget plan lines, kita recompute 2 lines, bukan 100.
 
 ---
 
-## 6. Module Boundaries
+## 6. Batasan Modul
 
-What this module **does** (and is well-tested for):
+Yang modul ini lakukan (dan sudah teruji):
 
-- Budget enforcement on journal entry posting
-- Budget enforcement on purchase order confirmation (opt-in)
+- Budget enforcement di journal entry posting
+- Budget enforcement di purchase order confirmation (opt-in)
 - PO committed amount tracking
 - Overhead allocation engine
 - Budget revision chain
 - Multi-company isolation
 - State machine governance
 
-What this module **does not do** (and is not designed for):
+Yang modul ini tidak lakukan (dan memang bukan untuk itu):
 
-- **Revenue forecasting** (use `mis_builder` or dedicated forecasting
-  module)
-- **Cash flow management** (use Odoo's bank statement + reconciliation)
-- **Multi-year budget roll-over** (use `account.budget.recurring`)
-- **Project-based budget** (use `project` module's analytic integration)
-- **Customer invoice budget control** (out of scope; can be added via
-  inheritance of `account.move` with `move_type='out_invoice'`)
+- **Revenue forecasting** (pakai `mis_builder` atau modul forecasting
+  khusus)
+- **Cash flow management** (pakai bank statement + reconciliation Odoo)
+- **Multi-year budget roll-over** (pakai `account.budget.recurring`)
+- **Project-based budget** (pakai modul `project` dengan integrasi
+  analytic-nya)
+- **Customer invoice budget control** (out of scope; bisa ditambah lewat
+  inheritance `account.move` dengan `move_type='out_invoice'`)
 
 ---
 
-## 7. Testing Strategy
+## 7. Strategi Testing
 
-The module has 4 test files in `tests/`:
+Modul ini punya 6 file test di `tests/`:
 
-| File | Focus | Test Count |
+| File | Fokus | Jumlah Test |
 |---|---|---|
-| `test_allocation_cost_center.py` | Allocation engine + cost center CRUD | 8 |
-| `test_committed_amount.py` | PO committed tracking + threshold block | 9 |
-| `test_budget_revision.py` | Revise workflow + state protection | 9 |
-| (planned) `test_performance.py` | Benchmarks for 1K+ records | TBD |
-| (planned) `test_multi_company.py` | Multi-company isolation | TBD |
+| `test_allocation_cost_center.py` | Allocation engine + cost center CRUD | 9 |
+| `test_budget_control.py` | Threshold block + alert level | 11 |
+| `test_budget_revision.py` | Revise workflow + state protection | 12 |
+| `test_committed_amount.py` | PO committed tracking + threshold block | 11 |
+| `test_multi_company.py` | Multi-company isolation | 3 |
+| `test_performance.py` | Benchmark untuk 1K+ records | 5 |
 
-**Pattern**: All tests use `TransactionCase` (rolls back per test) and
-`@tagged("post_install", "-at_install")` to ensure test data is
-isolated.
+**Pattern**: semua test pakai `TransactionCase` (roll back per test) dan
+`@tagged("post_install", "-at_install")` supaya data test terisolasi.
 
 ---
 
-## 8. Maintenance Notes
+## 8. Catatan Pemeliharaan
 
-### 8.1 Odoo Version Compatibility
+### 8.1 Kompatibilitas Versi Odoo
 
-| Odoo Version | Status | Notes |
+| Versi Odoo | Status | Catatan |
 |---|---|---|
-| 18.0 | ✅ Active | Current development |
-| 17.0 | ❌ Not supported | Uses `account_analytic_distribution` JSONB (v16+); `_parent_store` is Odoo 18-stable |
-| 16.0 | ❌ Not supported | `analytic_distribution` is v16+; older v15 has separate `analytic_account_id` field |
+| 18.0 | Aktif | Development saat ini |
+| 17.0 | Tidak didukung | Pakai `account_analytic_distribution` JSONB (v16+); `_parent_store` stabil di Odoo 18 |
+| 16.0 | Tidak didukung | `analytic_distribution` mulai v16+; v15 ke bawah masih pakai field `analytic_account_id` terpisah |
 
-### 8.2 Migration to Future Odoo Versions
+### 8.2 Migrasi ke Versi Odoo Mendatang
 
-When migrating to Odoo 19+:
+Kalau migrasi ke Odoo 19+:
 
-1. Update `__manifest__.py` version to `19.0.x.x.x`
-2. Check `account.move.line` API changes (rare; mostly stable)
-3. Check `analytic_distribution` API (was `analytic_account_id` before
-   v16)
-4. Re-run benchmark tests; GIN index design should still apply
+1. Update versi di `__manifest__.py` jadi `19.0.x.x.x`
+2. Cek perubahan API di `account.move.line` (jarang; umumnya stabil)
+3. Cek API `analytic_distribution` (sebelum v16 masih `analytic_account_id`)
+4. Re-run benchmark test; desain GIN index harusnya tetap applicable
 
-### 8.3 Known Performance Bottlenecks (Future Optimization)
+### 8.3 Bottleneck Performa yang Diketahui (Optimasi Mendatang)
 
-For very large datasets (>10K budget plans), consider:
+Untuk dataset yang sangat besar (>10K budget plan), pertimbangkan:
 
-- **Materialized view** for cross-cost-center aggregation
-- **Cron job** for batch recompute during off-peak hours
-- **Caching** of `is_currently_active` (currently computed on read)
-- **Partitioning** of `account_move_line` by date (PostgreSQL native)
+- **Materialized view** untuk agregasi cross-cost-center
+- **Cron job** untuk batch recompute di jam off-peak
+- **Caching** untuk `is_currently_active` (saat ini dihitung saat read)
+- **Partitioning** `account_move_line` by date (PostgreSQL native)
 
-These are NOT implemented because typical deployments (10-100 cost
-centers) don't need them. Document here for future scale.
+Ini belum di-implementasi karena deployment tipikal (10-100 cost center)
+belum butuh. Dicatat di sini untuk antisipasi scale ke depan.
 
 ---
 
-## 9. Glossary
+## 9. Glosarium
 
-| Term | Definition |
+| Istilah | Definisi |
 |---|---|
-| **Analytic Distribution** | JSONB field on `account.move.line` mapping analytic account IDs to percentage weights |
-| **Committed Amount** | `actual_amount + po_committed_amount` (mirrors Odoo 18 Enterprise "Committed" column) |
-| **Available Amount** | `planned_amount - committed_amount`; negative = over-committed |
-| **Override Manager** | Highest-tier security group; can bypass hard-block on posting |
-| **Revision Chain** | Sequence of `budget.plan` records linked via `parent_revision_id`; original marked `revised` (immutable) |
-| **Idempotency** | SHA1 fingerprint of allocation parameters ensures re-allocation reuses existing move |
-| **Post-Init Hook** | Python code in `models/post_init_sql.py` that runs after `module.install()`; used to install GIN index |
-| **GIN Index** | Generalized Inverted Index; PostgreSQL index type optimized for JSONB containment queries (`?`, `@>`, `<@`) |
+| **Analytic Distribution** | Field JSONB di `account.move.line` yang mapping ID analytic account ke bobot persentase |
+| **Committed Amount** | `actual_amount + po_committed_amount` (mirror kolom "Committed" di Odoo 18 Enterprise) |
+| **Available Amount** | `planned_amount - committed_amount`; negatif = over-committed |
+| **Override Manager** | Security group tier tertinggi; bisa bypass hard-block saat posting |
+| **Revision Chain** | Sequence record `budget.plan` yang terhubung lewat `parent_revision_id`; original ditandai `revised` (immutable) |
+| **Idempotency** | SHA1 fingerprint dari parameter allocation supaya re-allocation reuse move yang sudah ada |
+| **Post-Init Hook** | Kode Python di `models/post_init_sql.py` yang jalan setelah `module.install()`; dipakai untuk install GIN index |
+| **GIN Index** | Generalized Inverted Index; tipe index PostgreSQL yang optimal untuk query containment JSONB (`?`, `@>`, `<@`) |
