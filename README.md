@@ -5,7 +5,7 @@
 [![License: LGPL-3](https://img.shields.io/badge/License-LGPL--3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Version](https://img.shields.io/badge/version-18.0.2.2.0-green.svg)](CHANGELOG.md)
 
-Modul Odoo 18 CE untuk enforce budget per cost center. Transaksi yang akan lewat limit ditolak saat posting, dan PO yang masih open dihitung sebagai komitmen supaya tidak over-commit.
+Modul untuk **Odoo 18 Community Edition** yang membantu Anda mengontrol anggaran per cost center. Transaksi yang melebihi limit langsung ditolak saat posting, bukan cuma peringatan. Komitmen dari PO yang masih terbuka ikut terhitung, jadi saldo anggaran selalu realistis dan tidak over-commit.
 
 ---
 
