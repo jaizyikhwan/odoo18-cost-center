@@ -23,11 +23,11 @@ Buka `http://localhost:8018`, install **Cost Center & Budget Control** dari Apps
 
 ## Fitur
 
-- **Hard-block di posting**. Transaksi yang akan lewat budget ditolak saat konfirmasi, bukan sekadar muncul di laporan. Manager bisa override lewat group dengan audit trail di chatter.
-- **PO Committed tracking**. PO yang sudah confirmed tapi belum ditagih tetap dihitung sebagai komitmen, jadi angka budget yang tersedia selalu real-time.
-- **Hierarki cost center**. Cost center bisa disusun parent-child (misal divisi → departemen → tim), dengan analytic account otomatis ter-link.
-- **Distribusi overhead**. Alokasi biaya antar cost center lewat journal entry yang balance (debit = kredit), dengan SHA1 ref supaya tidak dobel kalau diulang.
-- **Budget revision**. Revisi budget membuat clone baru yang editable, versi lama otomatis di-lock jadi history yang tidak bisa diedit.
+- **Blokir otomatis** — Transaksi yang melewati budget ditolak saat posting. Kalau perlu, manager bisa override dengan jejak audit di chatter.
+- **Komitmen real-time** — PO confirmed yang belum ditagih tetap dihitung, jadi saldo budget selalu akurat.
+- **Cost center bertingkat** — Susun parent-child (divisi → departemen → tim) dengan analytic account otomatis.
+- **Alokasi biaya overhead** — Distribusi biaya antar cost center dengan jurnal yang balance, aman dari duplikasi.
+- **Revisi budget aman** — Revisi bikin clone baru, versi lama otomatis terkunci sebagai history.
 
 ---
 
